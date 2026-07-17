@@ -1,0 +1,3368 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>受発注プラットフォーム 開発ドキュメント（プレビュー）</title><style>
+:root{
+  --bg:#eaeff4; --surface:#ffffff; --surface-2:#f4f8fb; --surface-3:#eef3f8;
+  --ink:#17262f; --ink-soft:#495d6d; --ink-faint:#7d8fa0;
+  --border:#dbe4ec; --border-strong:#c4d1de;
+  --accent:#0f5f74; --accent-2:#127589; --accent-soft:#e0edf0; --accent-ink:#0a4453;
+  --warm:#b85f38; --warm-soft:#f6e8e0; --warm-ink:#8a4325;
+  --shadow:0 1px 2px rgba(20,40,55,.05),0 8px 28px rgba(20,40,55,.06);
+  --maxw:820px;
+  --font-sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic","Meiryo",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --font-mono:ui-monospace,"SF Mono","SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0c141c; --surface:#131f29; --surface-2:#17242f; --surface-3:#1b2935;
+    --ink:#e7eef4; --ink-soft:#a6b6c4; --ink-faint:#6e8091;
+    --border:#26333f; --border-strong:#33434f;
+    --accent:#3fa9c0; --accent-2:#4fb8ce; --accent-soft:#12303a; --accent-ink:#9fd8e4;
+    --warm:#dd8a5e; --warm-soft:#2c1f18; --warm-ink:#e6a983;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#eaeff4; --surface:#ffffff; --surface-2:#f4f8fb; --surface-3:#eef3f8;
+  --ink:#17262f; --ink-soft:#495d6d; --ink-faint:#7d8fa0;
+  --border:#dbe4ec; --border-strong:#c4d1de;
+  --accent:#0f5f74; --accent-2:#127589; --accent-soft:#e0edf0; --accent-ink:#0a4453;
+  --warm:#b85f38; --warm-soft:#f6e8e0; --warm-ink:#8a4325;
+  --shadow:0 1px 2px rgba(20,40,55,.05),0 8px 28px rgba(20,40,55,.06);
+}
+:root[data-theme="dark"]{
+  --bg:#0c141c; --surface:#131f29; --surface-2:#17242f; --surface-3:#1b2935;
+  --ink:#e7eef4; --ink-soft:#a6b6c4; --ink-faint:#6e8091;
+  --border:#26333f; --border-strong:#33434f;
+  --accent:#3fa9c0; --accent-2:#4fb8ce; --accent-soft:#12303a; --accent-ink:#9fd8e4;
+  --warm:#dd8a5e; --warm-soft:#2c1f18; --warm-ink:#e6a983;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);
+  line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased;
+  font-feature-settings:"palt";text-rendering:optimizeLegibility}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+.shell{display:grid;grid-template-columns:308px minmax(0,1fr);max-width:1360px;margin:0 auto;
+  min-height:100vh;gap:0}
+
+/* sidebar */
+.sidebar{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;
+  border-right:1px solid var(--border);background:var(--surface);
+  display:flex;flex-direction:column;padding:26px 20px 30px}
+.brand{display:flex;flex-direction:column;gap:3px;padding:2px 6px 20px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.brand .b-mark{display:flex;align-items:center;gap:9px;font-weight:800;letter-spacing:-.01em;font-size:15.5px}
+.brand .b-dot{width:22px;height:22px;border-radius:7px;flex:none;
+  background:linear-gradient(150deg,var(--accent),var(--accent-2));position:relative}
+.brand .b-dot::after{content:"";position:absolute;inset:6px 6px auto auto;width:6px;height:6px;border-radius:2px;background:var(--warm)}
+.brand .b-sub{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-faint);padding-left:1px}
+
+.docnav{display:flex;flex-direction:column;gap:3px;margin-bottom:6px}
+.navbtn{display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;
+  background:transparent;border:1px solid transparent;border-radius:10px;padding:9px 11px;
+  color:var(--ink-soft);font-family:inherit;font-size:14px;line-height:1.35;transition:background .15s,color .15s,border-color .15s}
+.navbtn:hover{background:var(--surface-2);color:var(--ink)}
+.navbtn .nav-code{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);
+  border:1px solid var(--border-strong);border-radius:5px;padding:2px 5px;flex:none;transition:inherit}
+.navbtn .nav-label{font-weight:600}
+.navbtn.active{background:var(--accent-soft);color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.navbtn.active .nav-code{color:var(--accent-ink);border-color:color-mix(in srgb,var(--accent) 40%,transparent);background:var(--surface)}
+
+.tocwrap{margin-top:12px;border-top:1px solid var(--border);padding-top:12px;min-height:0}
+.tocwrap>summary{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);cursor:pointer;list-style:none;padding:4px 6px;user-select:none}
+.tocwrap>summary::-webkit-details-marker{display:none}
+.tocwrap>summary::before{content:"目次 / ";}
+.toc ul{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:1px}
+.toc li a{display:block;text-decoration:none;color:var(--ink-soft);font-size:12.5px;line-height:1.5;
+  padding:4px 8px;border-radius:6px;border-left:2px solid transparent;transition:background .12s,color .12s}
+.toc li.toc-h3 a{padding-left:20px;font-size:12px;color:var(--ink-faint)}
+.toc li a:hover{background:var(--surface-2);color:var(--ink)}
+.toc li a.cur{color:var(--accent-ink);background:var(--accent-soft);border-left-color:var(--accent)}
+.toc-empty{color:var(--ink-faint);font-size:12px;padding:6px}
+
+/* main */
+.main{min-width:0;padding:0 clamp(20px,4vw,60px)}
+.doc[hidden]{display:none}
+.masthead{padding:52px 0 26px;border-bottom:1px solid var(--border);margin-bottom:34px}
+.mh-kick{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--accent);display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.mh-code{background:var(--accent);color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;letter-spacing:.08em}
+:root[data-theme="dark"] .mh-code,@media(prefers-color-scheme:dark){.mh-code{color:#08161b}}
+.mh-title{font-size:clamp(25px,3.4vw,35px);line-height:1.28;font-weight:800;letter-spacing:-.02em;
+  margin:0;text-wrap:balance;max-width:16em}
+.mh-sub{margin:14px 0 0;color:var(--ink-soft);font-size:15px;max-width:44em}
+
+/* prose */
+.prose{max-width:var(--maxw);padding-bottom:120px}
+.prose>*{max-width:100%}
+.prose h2{font-size:22px;font-weight:800;letter-spacing:-.015em;line-height:1.4;margin:56px 0 4px;
+  padding-top:20px;border-top:1px solid var(--border);text-wrap:balance}
+.prose h2:first-child{margin-top:8px;border-top:0;padding-top:0}
+.prose h3{font-size:17px;font-weight:700;line-height:1.5;margin:36px 0 2px;color:var(--ink);text-wrap:balance}
+.prose h4{font-size:14.5px;font-weight:700;margin:26px 0 0;color:var(--ink-soft)}
+.prose p{margin:14px 0;color:var(--ink)}
+.prose a{color:var(--accent-2);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.prose a:hover{border-bottom-color:var(--accent)}
+.prose ul,.prose ol{margin:14px 0;padding-left:1.3em;display:flex;flex-direction:column;gap:7px}
+.prose li{padding-left:4px}
+.prose li::marker{color:var(--accent);font-weight:700}
+.prose strong{font-weight:700;color:var(--ink)}
+.prose hr{border:0;border-top:1px solid var(--border);margin:40px 0}
+.prose code{font-family:var(--font-mono);font-size:.86em;background:var(--surface-3);
+  border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--accent-ink)}
+.prose blockquote{margin:20px 0;padding:14px 18px;background:var(--warm-soft);
+  border-left:3px solid var(--warm);border-radius:0 10px 10px 0;color:var(--ink)}
+.prose blockquote p{margin:6px 0}
+.prose blockquote strong{color:var(--warm-ink)}
+
+/* tables */
+.tbl{overflow-x:auto;margin:20px 0;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);
+  background:var(--surface)}
+.tbl table{border-collapse:collapse;width:100%;font-size:13.5px;line-height:1.65;
+  font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+.tbl thead th{background:var(--surface-3);font-weight:700;color:var(--ink);white-space:nowrap;
+  position:sticky;top:0;border-bottom:1px solid var(--border-strong);font-size:12.5px}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:var(--surface-2)}
+.tbl td:first-child{white-space:nowrap;font-family:var(--font-mono);font-size:12.5px;color:var(--accent-ink);font-weight:600}
+.tbl td strong{color:var(--ink)}
+
+/* diagrams */
+.diagram{margin:28px 0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.diagram figcaption{padding:15px 18px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:2px;background:var(--surface-2)}
+.dg-kick{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.dg-title{font-weight:700;font-size:15px;color:var(--ink)}
+.dg-sub{font-size:12.5px;color:var(--ink-soft)}
+.dg-scroll{overflow:auto;max-height:78vh;padding:22px;background:#fbfcfe;
+  background-image:radial-gradient(circle at 1px 1px,rgba(15,95,116,.09) 1px,transparent 0);background-size:22px 22px}
+.dg-scroll svg{display:block;margin:0 auto}
+
+/* theme toggle */
+.themetoggle{position:fixed;right:16px;bottom:16px;z-index:20;display:flex;gap:2px;
+  background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:3px;box-shadow:var(--shadow)}
+.themetoggle button{border:0;background:transparent;color:var(--ink-faint);cursor:pointer;
+  width:34px;height:30px;border-radius:999px;font-size:14px;display:grid;place-items:center;font-family:inherit}
+.themetoggle button.on{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* mobile */
+.menutoggle{display:none}
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;height:auto;max-height:none;border-right:0;border-bottom:1px solid var(--border);
+    padding:14px 16px;z-index:15}
+  .brand{padding-bottom:12px;margin-bottom:12px}
+  .docnav{flex-direction:row;overflow-x:auto;gap:8px;padding-bottom:4px;scrollbar-width:none;
+    scroll-snap-type:x proximity}
+  .docnav::-webkit-scrollbar{display:none}
+  .navbtn{flex:none;width:auto;white-space:nowrap;scroll-snap-align:start;padding:8px 12px}
+  .navbtn .nav-label{font-size:13px}
+  .tocwrap{margin-top:10px;padding-top:10px}
+  .tocwrap[open] .toc{max-height:44vh;overflow:auto}
+  .main{padding:0 18px}
+  .masthead{padding:32px 0 20px;margin-bottom:24px}
+  .prose{padding-bottom:80px}
+}
+@media (min-width:901px){
+  .tocwrap>summary{cursor:default}
+  .tocwrap>summary::before{content:"目次";}
+}
+</style></head><body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="b-mark"><span class="b-dot"></span>受発注プラットフォーム</div>
+      <div class="b-sub">Hokkaido Primary Industry · Spec Preview</div>
+    </div>
+    <nav class="docnav" aria-label="ドキュメント">
+      <button class="navbtn active" data-doc="overview" type="button"><span class="nav-code">00</span><span class="nav-label">プロジェクト概要</span></button><button class="navbtn" data-doc="requirements" type="button"><span class="nav-code">01</span><span class="nav-label">要件定義書ドラフト</span></button><button class="navbtn" data-doc="screens" type="button"><span class="nav-code">02</span><span class="nav-label">画面一覧・画面遷移案</span></button><button class="navbtn" data-doc="tech" type="button"><span class="nav-code">03</span><span class="nav-label">技術課題と解決策</span></button>
+    </nav>
+    <details class="tocwrap" open>
+      <summary></summary>
+      <div class="toc" data-doc="overview"><ul><li class="toc-h2"><a href="#_1">ドキュメント構成</a></li><li class="toc-h2"><a href="#3">このプロジェクトの要点（3ドキュメント共通の前提）</a></li><li class="toc-h2"><a href="#3_1">フェーズ用語（3ドキュメント共通の定義）</a></li><li class="toc-h2"><a href="#_2">次回打ち合わせでの最優先確認事項（要件確定・開発着手前に必須）</a></li><li class="toc-h2"><a href="#_3">重要な留意事項</a></li></ul></div><div class="toc" data-doc="requirements" hidden><ul><li class="toc-h3"><a href="#_1">改訂履歴</a></li><li class="toc-h2"><a href="#1">1. プロジェクト概要</a></li><li class="toc-h3"><a href="#11">1.1 背景</a></li><li class="toc-h3"><a href="#12">1.2 プロジェクトの目的</a></li><li class="toc-h3"><a href="#13">1.3 事業ビジョン（中長期構想）</a></li><li class="toc-h2"><a href="#2">2. 用語定義</a></li><li class="toc-h2"><a href="#3">3. スコープ定義</a></li><li class="toc-h3"><a href="#31-134">3.1 フェーズ1（今回開発：3〜4ヶ月）</a></li><li class="toc-h3"><a href="#32-11x2">3.2 フェーズ1完了後の拡充（リリース1.x）・フェーズ2以降（将来拡張）</a></li><li class="toc-h3"><a href="#33-1">3.3 スコープ外（フェーズ1では実施しない事項）</a></li><li class="toc-h2"><a href="#4">4. ユーザー種別と権限</a></li><li class="toc-h3"><a href="#41-3">4.1 ユーザーロール定義（3ロール）</a></li><li class="toc-h3"><a href="#42">4.2 権限マトリクス（案）</a></li><li class="toc-h3"><a href="#43">4.3 段階リリース要件（アクセス統制）</a></li><li class="toc-h2"><a href="#5">5. 機能要件一覧</a></li><li class="toc-h3"><a href="#51">5.1 出品・商品管理</a></li><li class="toc-h3"><a href="#52">5.2 発注・決済・アカウント</a></li><li class="toc-h3"><a href="#53">5.3 管理・システム</a></li><li class="toc-h3"><a href="#54-wont">5.4 今回対象外（Won&#x27;t）</a></li><li class="toc-h2"><a href="#6">6. 非機能要件</a></li><li class="toc-h3"><a href="#61">6.1 ユーザビリティ・アクセシビリティ</a></li><li class="toc-h3"><a href="#62">6.2 性能</a></li><li class="toc-h3"><a href="#63">6.3 可用性</a></li><li class="toc-h3"><a href="#64">6.4 セキュリティ</a></li><li class="toc-h3"><a href="#65">6.5 拡張性</a></li><li class="toc-h3"><a href="#66">6.6 保守性</a></li><li class="toc-h2"><a href="#7">7. 外部サービス連携</a></li><li class="toc-h2"><a href="#8">8. リリース計画・マイルストーン案</a></li><li class="toc-h2"><a href="#9">9. 前提条件・制約事項</a></li><li class="toc-h3"><a href="#91">9.1 前提条件</a></li><li class="toc-h3"><a href="#92">9.2 制約事項</a></li><li class="toc-h2"><a href="#10">10. 未確定事項・クライアント確認事項</a></li><li class="toc-h2"><a href="#a">付録A. 本ドラフトの前提と今後の進め方</a></li></ul></div><div class="toc" data-doc="screens" hidden><ul><li class="toc-h2"><a href="#1">1. 前提・方針</a></li><li class="toc-h3"><a href="#11">1.1 アプリ構成の推奨案</a></li><li class="toc-h3"><a href="#12">1.2 法令・ストア審査上の必須対応（設計前提の重大論点）</a></li><li class="toc-h3"><a href="#13">1.3 決済・精算スキームの前提（設計前提の重大論点）</a></li><li class="toc-h3"><a href="#14-fr-f-xxx">1.4 機能要件との対応（FR番号と要件定義書 F-xxx の対応）</a></li><li class="toc-h2"><a href="#2_1">2. 画面一覧表</a></li><li class="toc-h3"><a href="#21">2.1 発注者向け（モバイルアプリ／ロール: 発注者）</a></li><li class="toc-h3"><a href="#22">2.2 出品者向け（モバイルアプリ／ロール: 出品者）</a></li><li class="toc-h3"><a href="#23-web">2.3 管理者向け（Web管理画面）</a></li><li class="toc-h3"><a href="#24">2.4 共通画面（全ロール）</a></li><li class="toc-h2"><a href="#3">3. 画面遷移図</a></li><li class="toc-h3"><a href="#31">3.1 発注者（モバイルアプリ）</a></li><li class="toc-h3"><a href="#32">3.2 出品者（モバイルアプリ）</a></li><li class="toc-h3"><a href="#33-web">3.3 管理者（Web管理画面）</a></li><li class="toc-h2"><a href="#4">4. 画面数サマリーと開発優先度</a></li><li class="toc-h3"><a href="#41">4.1 画面数サマリー</a></li><li class="toc-h3"><a href="#42-34">4.2 開発フェーズ切り分け案（開発期間3〜4ヶ月を想定）</a></li><li class="toc-h3"><a href="#43">4.3 次回確認事項（ヒアリングで確定が必要な仮置き項目）</a></li></ul></div><div class="toc" data-doc="tech" hidden><ul><li class="toc-h3"><a href="#_1">版数</a></li><li class="toc-h2"><a href="#0">0. 本書が前提とする要求事項（要確認）</a></li><li class="toc-h2"><a href="#1">1. 推奨技術スタック</a></li><li class="toc-h3"><a href="#11">1.1 選定の前提条件（仮置き）</a></li><li class="toc-h3"><a href="#12">1.2 推奨構成（サマリー）</a></li><li class="toc-h3"><a href="#13">1.3 選定理由と代替案比較</a></li><li class="toc-h2"><a href="#2">2. 技術的課題と解決策</a></li><li class="toc-h3"><a href="#2-1-34-f-205f-112f-113f-114">2-1. 3〜4ヶ月納期とアプリストア審査 （関連要件: F-205／F-112・F-113・F-114）</a></li><li class="toc-h3"><a href="#2-2-stripe-connect-f-104f-007f-110f-207">2-2. マーケットプレイス型決済の実装（Stripe Connect）と消費税 （関連要件: F-104／F-007／F-110／F-207）</a></li><li class="toc-h3"><a href="#2-3-f-006">2-3. リアルタイム在庫管理と売り越し（オーバーセル）防止 （関連要件: F-006）</a></li><li class="toc-h3"><a href="#2-4-ux-f-002f-102f-115">2-4. 高齢者・アナログ層向けUXの技術面 （関連要件: F-002／F-102／F-115）</a></li><li class="toc-h3"><a href="#2-5-line-f-203f-204">2-5. LINEライクな通知体験の実現 （関連要件: F-203／F-204）</a></li><li class="toc-h3"><a href="#2-6-f-010f-002f-115">2-6. 漁港・農村部の通信環境での写真アップロード （関連要件: F-010／F-002／F-115）</a></li><li class="toc-h3"><a href="#2-7-ai-f-008f-009">2-7. AI商品説明・タイトル自動生成 （関連要件: F-008／F-009）</a></li><li class="toc-h3"><a href="#2-8-f-103">2-8. 締切時間管理と当日発送ロジック （関連要件: F-103）</a></li><li class="toc-h3"><a href="#2-9-f-110f-109f-106f-001f-002">2-9. 配送・物流（クール便・送料設計・送り状） （関連要件: F-110／F-109／F-106／F-001・F-002）</a></li><li class="toc-h3"><a href="#2-10-rbac-f-201">2-10. 権限管理・マルチロール（RBAC） （関連要件: F-201）</a></li><li class="toc-h3"><a href="#2-11-65f-202">2-11. スケーラビリティ（クローズドβ→一般公開→大規模流通） （関連要件: 非機能6.5（拡張性）／F-202）</a></li><li class="toc-h3"><a href="#2-12-f-104f-113f-20864">2-12. セキュリティ・コンプライアンス （関連要件: F-104／F-113／F-208／非機能6.4）</a></li><li class="toc-h3"><a href="#2-13-f-10763">2-13. バックアップ・障害復旧・決済データ整合性 （関連要件: F-107／非機能6.3（可用性））</a></li><li class="toc-h2"><a href="#3">3. スケジュールリスクと対策のまとめ</a></li><li class="toc-h3"><a href="#31-34">3.1 3〜4ヶ月で実現するためのスコープ整理（推奨案）</a></li><li class="toc-h3"><a href="#32">3.2 クリティカルパス（納期を直接左右する項目）</a></li><li class="toc-h3"><a href="#33-4">3.3 マイルストーン目安（4ヶ月想定・仮置き）</a></li><li class="toc-h3"><a href="#34">3.4 主要リスクと対策一覧</a></li><li class="toc-h3"><a href="#35-cicd">3.5 開発基盤（環境分離・テスト・CI/CD）</a></li><li class="toc-h3"><a href="#_2">付記</a></li></ul></div>
+    </details>
+  </aside>
+  <main class="main">
+    <article class="doc" data-doc="overview"><header class="masthead"><div class="mh-kick"><span class="mh-code">00</span>OVERVIEW</div><h1 class="mh-title">プロジェクト概要</h1><p class="mh-sub">3ドキュメントの索引と、開発着手前の最優先確認事項</p></header><div class="prose"><p>初回ヒアリング内容に基づく、開発着手前の3成果物（ドラフト）です。3ドキュメントは相互に整合するようレビュー・調整済みです。<strong>確認事項（下記）への回答をもって確定版へ更新します。</strong></p>
+<p>作成日: 2026年7月17日 ／ ステータス: ドラフト（クライアント確認待ち）</p>
+<h2 id="_1">ドキュメント構成</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>ドキュメント</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><a href="#" data-goto="requirements">要件定義書ドラフト</a></td>
+<td>背景・目的、スコープ（フェーズ分け）、3ロール権限、機能要件一覧（要件ID・MoSCoW優先度）、非機能要件、外部連携、リリース計画、確認事項</td>
+</tr>
+<tr>
+<td>02</td>
+<td><a href="#" data-goto="screens">画面一覧・画面遷移案</a></td>
+<td>アプリ構成方針、全47画面の一覧（ロール別・要件ID対応）、Mermaid画面遷移図（発注者/出品者/管理者）、フェーズ切り分け</td>
+</tr>
+<tr>
+<td>03</td>
+<td><a href="#" data-goto="tech">技術課題と解決策</a></td>
+<td>推奨技術スタック（選定理由・代替案比較）、13の技術課題と解決策、スケジュールリスクとクリティカルパス</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="3">このプロジェクトの要点（3ドキュメント共通の前提）</h2>
+<ul>
+<li><strong>提供形態</strong>: スマートフォンアプリで完結（Web ECではない）。初期はQRコード経由のクローズドβ → テスト後に一般公開の段階リリース。</li>
+<li><strong>3ロール</strong>: 管理者（運営会社）／出品者（漁師・農家・漁協）／発注者（飲食店・百貨店・惣菜工場）。</li>
+<li><strong>最優先UX</strong>: 高齢者・アナログ層の出品者でも使える極限までシンプルな操作。出品は「①写真を撮る→②金額（原価）を入れる→③出品ボタン」の3操作。</li>
+<li><strong>価格モデル（加算モデル）</strong>: 出品者が原価を入力 → 管理者設定のマージンを加算 → 販売価格を自動算出し発注者へ総額表示（要件F-007）。</li>
+<li><strong>決済</strong>: Stripe。売上分配を伴うためStripe Connectを推奨候補とするが、<strong>取引スキーム（買取再販 or マーケットプレイス仲介）の確定が最優先</strong>（資金決済法の論点に直結）。</li>
+<li><strong>納期</strong>: 3〜4ヶ月でフェーズ1（コアループ：出品→閲覧→注文→決済→発送）を完成。</li>
+</ul>
+<h2 id="3_1">フェーズ用語（3ドキュメント共通の定義）</h2>
+<ul>
+<li><strong>フェーズ1</strong>: 今回開発（3〜4ヶ月）。</li>
+<li><strong>リリース1.x</strong>: フェーズ1完了後の早期機能拡充（キーワード検索、通知一覧タブ、出品者売上確認画面、LINE公式アカウント連携、送り状API連携、インボイス本格対応、ダッシュボード拡充 等）。</li>
+<li><strong>フェーズ2（事業拡大）</strong>: 道の駅・温泉施設商品、市町村・自治体の横展開、数百億円規模GMVを見据えた拡張。</li>
+</ul>
+<h2 id="_2">次回打ち合わせでの最優先確認事項（要件確定・開発着手前に必須）</h2>
+<p>要件定義書 第10章に全23項目を整理しています。特に開発着手前に回答が必要なもの:</p>
+<ol>
+<li><strong>取引スキーム（買取再販 or マーケットプレイス仲介）と資金フロー</strong> — 資金決済法（資金移動業登録の要否）に直結。<strong>最優先</strong>。（第10章#5）</li>
+<li><strong>配送・受け渡し方法と送料</strong> — 宅配か直接受け渡しか、送料の負担・算定方式、クール便対応。配送先住所入力の要否にも影響。（第10章#1）</li>
+<li><strong>決済確定タイミング</strong> — 即時決済 or オーソリ→キャプチャ（欠品・キャンセルの多い生鮮品では後者が有利）。（第10章#22）</li>
+<li><strong>返品・キャンセルポリシー</strong>（生鮮品特性）／<strong>請求書払い（掛売り）の要否</strong>（BtoB想定）／<strong>インボイス・消費税（軽減税率）対応</strong>。（第10章#2〜#4）</li>
+<li><strong>アプリ実装形態</strong>（ネイティブ/クロスプラットフォーム/PWA）と<strong>通知方式</strong>（アプリプッシュ先行／LINE連携）。（第10章#7・#8）</li>
+<li><strong>発注者の属性</strong>（事業者限定か一般消費者を含むか）— 特商法表記の要否等に波及。（第10章#9）</li>
+</ol>
+<h2 id="_3">重要な留意事項</h2>
+<ul>
+<li>本ドキュメントの工数・費用・期間・数値はすべて概算（仮置き）です。詳細見積は要件確定後に別途提示します。</li>
+<li>資金決済法・特定商取引法・食品表示法・消費税/インボイス制度・個人情報保護法に関する記述は一般的な整理であり、<strong>法的助言ではありません</strong>。確定には弁護士・税理士等の専門家確認が必要です。</li>
+<li>Stripe・Apple・Google・LINE・配送業者等の外部サービスの仕様・料金・審査基準は変更され得るため、実装着手時点の最新公式ドキュメントの確認を前提とします。</li>
+</ul></div></article><article class="doc" data-doc="requirements" hidden><header class="masthead"><div class="mh-kick"><span class="mh-code">01</span>REQUIREMENTS</div><h1 class="mh-title">要件定義書ドラフト</h1><p class="mh-sub">スコープ・3ロール権限・機能要件（ID/優先度）・非機能要件・確認事項</p></header><div class="prose"><div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ドキュメント名</td>
+<td>要件定義書（ドラフト）</td>
+</tr>
+<tr>
+<td>版数</td>
+<td>0.92（3ドキュメント間整合性レビュー反映版・クライアント確認用）</td>
+</tr>
+<tr>
+<td>作成日</td>
+<td>2026年7月16日</td>
+</tr>
+<tr>
+<td>ステータス</td>
+<td>ドラフト（第10章の確認事項の回答をもって確定版（v1.0）へ更新）</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>本書は初回ヒアリング内容を基に作成したドラフトです。ヒアリングで言及のなかった事項については確定事項とせず、「（仮）」「推奨」と明示のうえ、第10章「未確定事項・クライアント確認事項」に整理しています。確認事項の回答をもって確定版へ更新します。</p>
+</blockquote>
+<h3 id="_1">改訂履歴</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>版数</th>
+<th>日付</th>
+<th>変更内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.9</td>
+<td>2026年7月16日</td>
+<td>初回ヒアリング反映版として作成</td>
+</tr>
+<tr>
+<td>0.91</td>
+<td>2026年7月16日</td>
+<td>レビュー指摘反映：会員登録・配送先・送料の要件追加（F-108〜F-111）、返金処理の優先度見直し（F-107をMust化・分割）、資金決済法スキーム論点の追加（第10章#5）、酒類の取扱い整理（3.3章・第10章#6）、Stripe入金サイクル記載の修正（9.2章）、プッシュ通知方式別制約の明記（第7章）</td>
+</tr>
+<tr>
+<td>0.92</td>
+<td>2026年7月17日</td>
+<td>3ドキュメント間整合性レビュー反映：価格モデル＝加算モデルの明確化（F-007算式・Stripe Connect対応関係）、AI生成をShouldに統一（F-008/F-009・縮退設計必須）、ストア審査必須機能の要件化（F-112退会／F-113規約同意／F-114通知許諾）、決済確定タイミング・取引スキーム（買取再販／仲介）等の確認事項追加（第10章#5拡張・#21〜#23）、温度帯選択（F-001/F-002）・エラー時サポート／オフライン出品継続（F-115）・出品者売上確認（F-209）の要件化、取引明細CSV（F-208）のMust化、ダッシュボード受入基準の明確化（F-202）、フェーズ用語（リリース1.x／フェーズ2）の分離、ヒアリング固有情報の反映</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="1">1. プロジェクト概要</h2>
+<h3 id="11">1.1 背景</h3>
+<ul>
+<li>北海道の一次産業（農業・漁業）の生産者は、高品質な生産物を持ちながらも、販路開拓・受発注業務がFAX・電話等のアナログ手段に依存しており、出品・受注のハードルが高い。</li>
+<li>生産者には高齢者・デジタル操作に不慣れな層が多く、既存のECモール・受発注システムは操作が複雑で定着しにくい。</li>
+<li>「その日獲れたもの・収穫したものを、その場で写真を撮ってすぐ売る」という一次産業特有の商流に対応したプラットフォームが存在しない。</li>
+<li><strong>市場に出回らない傷ついた魚（未利用魚）</strong>等、規格外・従来販路に乗りにくい生産物の<strong>新たな販路化</strong>も重要な狙いとする。</li>
+</ul>
+<h3 id="12">1.2 プロジェクトの目的</h3>
+<ol>
+<li>農業・漁業の生産者（出品者）が、<strong>写真撮影と金額入力だけで即時に出品できる</strong>、極限までシンプルな受発注アプリを提供する。</li>
+<li>発注者が毎日の入荷情報をプッシュ通知（LINE公式アカウントのような「今日の商品」お知らせ体験）で受け取り、締切時間内に簡単に発注・クレジットカード決済まで完結できる仕組みを構築する。</li>
+<li>管理者が出品・売上・手数料（マージン）を一元管理できる運営基盤を整備する。</li>
+<li>まずはQRコード経由のクローズドな限定提供でテスト運用を行い、品質検証後に一般公開へ段階的に拡大する。</li>
+</ol>
+<h3 id="13">1.3 事業ビジョン（中長期構想）</h3>
+<ul>
+<li>フェーズ1では農業・漁業の生産物を対象とするが、将来的には<strong>道の駅・温泉施設の商品</strong>等へ取扱いを拡大する。</li>
+<li>北海道内の<strong>市町村を巻き込んだ地域流通プラットフォーム</strong>へと発展させ、地域経済圏全体をつなぐ基盤として、<strong>数百億円規模の流通総額（GMV）を目指す</strong>構想を持つ。</li>
+<li>本フェーズのシステム設計は、この将来拡張（出品主体の多様化・取扱高の拡大・自治体連携）を阻害しないアーキテクチャとすることを方針とする（詳細は第6章「拡張性」参照）。</li>
+</ul>
+<hr />
+<h2 id="2">2. 用語定義</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>用語</th>
+<th>定義</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>出品者</td>
+<td>農業・漁業の生産者等、本プラットフォームに商品を出品するユーザー。</td>
+</tr>
+<tr>
+<td>発注者</td>
+<td>出品された商品を発注（購入）するユーザー。</td>
+</tr>
+<tr>
+<td>管理者</td>
+<td>プラットフォーム運営会社。ユーザー・商品・売上・手数料を一元管理する。</td>
+</tr>
+<tr>
+<td>定期商品</td>
+<td>継続的・計画的に出品される商品（例：定番の農産物）。</td>
+</tr>
+<tr>
+<td>リアルタイム出品</td>
+<td>その場で写真を撮影し金額を入力するだけで即時出品する機能・運用形態（例：当日水揚げされた鮮魚）。</td>
+</tr>
+<tr>
+<td>マージン（手数料）</td>
+<td>管理者が設定するプラットフォーム手数料。<strong>原価に手数料を加算して販売価格を自動算出する（加算モデル）。</strong></td>
+</tr>
+<tr>
+<td>締切時間</td>
+<td>「何時までの発注で当日発送」等、当日出荷可否を分ける発注締切時刻。</td>
+</tr>
+<tr>
+<td>バッジ</td>
+<td>商品一覧上に表示するラベル表示。<strong>「NEW」「人気」を基本とし、「朝どれ」等の追加ラベルはバッジマスタで拡張可能とする。</strong></td>
+</tr>
+<tr>
+<td>温度帯</td>
+<td>商品の配送温度区分（冷凍／冷蔵／常温）。出品時に選択し、商品ページ・注文情報・発送指示に明示する。</td>
+</tr>
+<tr>
+<td>クローズドβ</td>
+<td>QRコードを配布された限定ユーザーのみが利用できるテスト提供期間。</td>
+</tr>
+<tr>
+<td>一般公開（GA）</td>
+<td>クローズドβでの検証完了後、広く一般に開放するリリース段階。</td>
+</tr>
+<tr>
+<td>フェーズ1</td>
+<td>今回開発（3〜4ヶ月）の初回リリース範囲。</td>
+</tr>
+<tr>
+<td>リリース1.x</td>
+<td>フェーズ1（初回リリース）完了後の<strong>早期機能拡充</strong>。事業拡大を指すフェーズ2とは区別する。</td>
+</tr>
+<tr>
+<td>フェーズ2</td>
+<td><strong>事業拡大</strong>（道の駅・温泉施設の取扱い、市町村・自治体を巻き込んだ横展開等）を指す段階。</td>
+</tr>
+<tr>
+<td>MoSCoW</td>
+<td>要件の優先度分類。Must（必須）/ Should（重要・推奨）/ Could（あれば望ましい）/ Won't（今回対象外）。</td>
+</tr>
+<tr>
+<td>GMV</td>
+<td>流通取引総額（Gross Merchandise Value）。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3">3. スコープ定義</h2>
+<p>本書では、<strong>「フェーズ1」＝今回開発（3〜4ヶ月）</strong>、<strong>「リリース1.x」＝フェーズ1完了後の早期機能拡充</strong>、<strong>「フェーズ2」＝事業拡大（道の駅・温泉施設の取扱い、市町村・自治体を巻き込んだ横展開 等）</strong> を指す。本章の定義を全ドキュメントのフェーズ用語の正とする。</p>
+<h3 id="31-134">3.1 フェーズ1（今回開発：3〜4ヶ月）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>区分</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>対象商材</td>
+<td>北海道の一次産業（農業・漁業）の生産物</td>
+</tr>
+<tr>
+<td>対象ユーザー</td>
+<td>管理者・出品者・発注者の3ロール</td>
+</tr>
+<tr>
+<td>提供形態</td>
+<td>初期はQRコード経由のクローズド提供（限定ユーザーのみ）。テスト・検証後に一般開放。</td>
+</tr>
+<tr>
+<td>出品機能</td>
+<td>定期商品出品（テンプレート再出品を含む）、リアルタイム出品（写真＋金額のみ）、温度帯選択（冷凍/冷蔵/常温）、カテゴリ編集、バッジ、公開/非公開、リアルタイム在庫管理</td>
+</tr>
+<tr>
+<td>価格・手数料</td>
+<td>自動マージン計算（<strong>加算モデル</strong>：原価＋管理者設定手数料 → 販売価格自動算出、発注者へ総額表示）</td>
+</tr>
+<tr>
+<td>発注・決済</td>
+<td>会員登録・認証、退会・アカウント削除、規約・ポリシー同意取得、通知許諾の事前説明、配送先住所管理、カート、簡単発注、送料計算（仕様は要確認）、締切時間表示・管理、Stripeクレジットカード決済、基本返金・注文取消処理</td>
+</tr>
+<tr>
+<td>管理機能</td>
+<td>3ロール権限管理、売上・商品一元管理ダッシュボード、取引明細CSV出力</td>
+</tr>
+<tr>
+<td>通知</td>
+<td>プッシュ通知による「今日の商品」お知らせ</td>
+</tr>
+<tr>
+<td>AI機能</td>
+<td>AI商品タイトル・説明文自動生成（<strong>Should。手入力＋定型テンプレートへ縮退できる設計を必須とし、工数遅延時はリリース1.xへ繰延可能なフォールバック前提のフェーズ1目標</strong>）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="32-11x2">3.2 フェーズ1完了後の拡充（リリース1.x）・フェーズ2以降（将来拡張）</h3>
+<blockquote>
+<p>リリース1.x（フェーズ1完了後の早期機能拡充）とフェーズ2（事業拡大）は区別する。</p>
+</blockquote>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>区分</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>リリース1.x候補（フェーズ1完了後の早期拡充）</td>
+<td>キーワード検索（F-011関連）、通知一覧タブ、出品者売上確認画面（F-209）、発注者起点のキャンセル・部分返金（F-111）、LINE公式アカウント連携、送り状発行システムとのAPI連携、インボイス本格対応（適格請求書の自動発行）、管理ダッシュボードの分析・グラフ拡充（F-202）</td>
+</tr>
+<tr>
+<td>商材拡大（フェーズ2）</td>
+<td>道の駅・温泉施設の商品の取扱い</td>
+</tr>
+<tr>
+<td>展開拡大（フェーズ2）</td>
+<td>一般公開後の機能拡張、市町村・自治体を巻き込んだ横展開</td>
+</tr>
+<tr>
+<td>事業拡大（フェーズ2）</td>
+<td>数百億円規模のGMVを見据えたスケール対応（多地域展開、出品主体の多様化 等）</td>
+</tr>
+<tr>
+<td>その他候補</td>
+<td>決済手段の追加（請求書払い等）、多言語対応、物流連携の高度化 など（第10章の確認結果により整理）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="33-1">3.3 スコープ外（フェーズ1では実施しない事項）</h3>
+<ul>
+<li>道の駅・温泉施設商品の出品対応（フェーズ2以降）</li>
+<li>Stripeクレジットカード決済以外の決済手段（要否は第10章で確認）</li>
+<li>物流・配送業務そのものの提供（配送手配の実務は出品者またはクライアント運用側の責任範囲とする想定（仮）。送料のシステム上の扱いはF-110で要件化し、仕様は第10章#1で確認）</li>
+<li><strong>酒類の取扱い（仮）</strong>：酒類のEC販売には通信販売酒類小売業免許が必要となるため、フェーズ1では酒類を取扱対象外とする（仮）。フェーズ2（道の駅商品等）で取扱う場合は免許要否を含め別途確認する（第10章#6参照）。</li>
+</ul>
+<hr />
+<h2 id="4">4. ユーザー種別と権限</h2>
+<h3 id="41-3">4.1 ユーザーロール定義（3ロール）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>ロール</th>
+<th>概要</th>
+<th>主な利用機能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>管理者</td>
+<td>プラットフォーム運営会社</td>
+<td>ユーザー管理、商品・カテゴリ管理、手数料（マージン率）設定、売上・商品一元管理ダッシュボード、通知配信管理、公開/非公開統制、返金・注文取消操作</td>
+</tr>
+<tr>
+<td>出品者</td>
+<td>農業・漁業の生産者等</td>
+<td>会員登録・ログイン、定期商品出品、リアルタイム出品、温度帯選択、在庫数量設定、商品編集、公開/非公開切替、（AIタイトル・説明文生成）、自身の売上確認（F-209）、欠品時の注文取消申請</td>
+</tr>
+<tr>
+<td>発注者</td>
+<td>飲食店・百貨店・惣菜工場の担当者等（ヒアリングで明示）。一般消費者への開放有無は第10章#9で確認</td>
+<td>会員登録・ログイン、配送先住所管理、商品閲覧、カート、発注、Stripe決済、締切時間確認、プッシュ通知受信、注文履歴確認、退会</td>
+</tr>
+</tbody>
+</table></div>
+<p>※ 発注者の想定属性（飲食店等の事業者か、一般消費者か、その両方か）はヒアリングで一般消費者への開放有無が未確定のため、第10章#9にて確認する。</p>
+<h3 id="42">4.2 権限マトリクス（案）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>機能</th>
+<th style="text-align: center;">管理者</th>
+<th style="text-align: center;">出品者</th>
+<th style="text-align: center;">発注者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>商品出品・編集（自身の商品）</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>全商品の編集・公開統制</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>カテゴリ編集</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">△（仮：要確認）</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>マージン率（手数料）設定</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>在庫数量設定</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>温度帯設定</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>バッジ付与（NEW/人気）</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">△（仮：要確認）</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>カート・発注・決済</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">○</td>
+</tr>
+<tr>
+<td>配送先住所の登録・編集</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">○</td>
+</tr>
+<tr>
+<td>返金・注文取消の実行</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">△（自身の受注の取消申請）</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>売上・商品一元管理ダッシュボード</td>
+<td style="text-align: center;">○（全体）</td>
+<td style="text-align: center;">○（自身分：F-209）</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>退会・アカウント削除（F-112）</td>
+<td style="text-align: center;">△（退会済みユーザー状態確認）</td>
+<td style="text-align: center;">○（自身）</td>
+<td style="text-align: center;">○（自身）</td>
+</tr>
+<tr>
+<td>プッシュ通知の配信管理</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">△（仮：要確認）</td>
+<td style="text-align: center;">−</td>
+</tr>
+<tr>
+<td>ユーザー管理（招待・停止）</td>
+<td style="text-align: center;">○</td>
+<td style="text-align: center;">−</td>
+<td style="text-align: center;">−</td>
+</tr>
+</tbody>
+</table></div>
+<p>○=利用可 / △=要確認（仮置き）または限定 / −=利用不可</p>
+<p>※ 出品者の売上・ダッシュボード閲覧はF-209（Should）に対応する。フェーズ1は管理者からの共有で代替可とし、画面提供はリリース1.xとする。受取額表示は価格モデル（F-007＝加算モデル）に従う。
+※ データ・認証基盤は複数ロール保持可能な設計とするが、フェーズ1のUIはログイン時のロールに応じた1ロール表示固定とする（兼任アカウントの有無は第10章#23で確認）。</p>
+<h3 id="43">4.3 段階リリース要件（アクセス統制）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>段階</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ステップ1：クローズド提供</td>
+<td><strong>QRコードを配布された限定ユーザーのみ</strong>が登録・利用できるアクセス制御を実装する。QRコード経由以外の登録は不可とする。</td>
+</tr>
+<tr>
+<td>ステップ2：テスト運用</td>
+<td>クローズド環境で実運用テスト（出品〜発注〜決済〜通知の一連フロー）を実施し、UI/UX・運用課題を改善する。</td>
+</tr>
+<tr>
+<td>ステップ3：一般開放</td>
+<td>テスト完了・クライアント判断後、QR制限を解除し一般ユーザーへ開放する。開放の判断基準・時期は第10章で確認。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="5">5. 機能要件一覧</h2>
+<p>優先度は MoSCoW（Must=必須 / Should=重要 / Could=可能なら / Won't=今回対象外）で付与。</p>
+<h3 id="51">5.1 出品・商品管理</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>要件ID</th>
+<th>機能名</th>
+<th>要件概要</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-001</td>
+<td>定期商品出品</td>
+<td>出品者が定番・継続商品を商品名、写真、価格（原価）、在庫数、温度帯（冷凍/冷蔵/常温）、カテゴリ等を設定して出品できる。<strong>定期商品テンプレートからの再出品（数量のみ入力）を含む。</strong></td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-002</td>
+<td>リアルタイム出品</td>
+<td><strong>写真撮影＋金額（原価）入力のみ</strong>で即時出品が完了する簡易出品フロー。当日入荷品等をその場で出品できる。入力項目を極小化する。<strong>温度帯（冷凍/冷蔵/常温）の選択を必須とするが、3択の大ボタン、テンプレート・前回値からのデフォルト適用により追加タップは原則ゼロとする。</strong></td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-003</td>
+<td>カテゴリ編集</td>
+<td>商品カテゴリの作成・編集・並び替えができる（管理主体は管理者を想定（仮）、出品者権限の付与範囲は要確認）。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-004</td>
+<td>バッジ表示（NEW/人気）</td>
+<td>商品に「NEW」「人気」等のバッジを表示できる。<strong>「NEW」「人気」を基本とし、「朝どれ」等の追加ラベルはバッジマスタで拡張可能とする。</strong> 付与ルール（手動/自動：新着日数・売上数連動等）および出品者への付与権限は要確認（第10章#15）。</td>
+<td>Should</td>
+</tr>
+<tr>
+<td>F-005</td>
+<td>公開/非公開切替</td>
+<td>商品ごとに公開/非公開を切り替えられる。非公開商品は発注者に表示されない。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-006</td>
+<td>リアルタイム在庫管理</td>
+<td>商品ごとに在庫数量を設定し、<strong>指定数量以上は売れない（売り越しを防止する）制御</strong>を行う。発注確定と同時に在庫を即時減算し、在庫0で自動的に売り切れ表示とする。同時アクセス時の二重販売を防止する排他制御を含む。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-007</td>
+<td>自動マージン計算（加算モデル）</td>
+<td>出品者が入力した<strong>原価に、管理者が設定した手数料（マージン率/額）を加算し、販売価格を自動算出</strong>する。出品者は原価入力のみで価格設定が完結し、<strong>発注者には総額（税込販売価格）を表示</strong>する。<strong>Stripe Connect採用時の対応関係</strong>：発注者は販売価格を支払い、マージン相当額を <code>application_fee_amount</code> としてプラットフォームが受領、原価相当額が出品者に帰属する。なお原価の税込/税抜の扱い・端数処理は確認事項（第10章#13・#14、税理士確認）とする。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-008</td>
+<td>AI商品タイトル自動生成</td>
+<td>商品写真・簡易入力情報から商品タイトルをAIで自動生成する。<strong>手入力＋定型テンプレートへ縮退できる設計を必須とする。</strong> 工数遅延時はリリース1.xへ繰り延べ可（フォールバック前提のフェーズ1目標）。</td>
+<td>Should</td>
+</tr>
+<tr>
+<td>F-009</td>
+<td>AI商品説明文自動生成</td>
+<td>商品写真・簡易入力情報から商品説明文をAIで自動生成する。生成文は出品者が確認・修正のうえ確定する運用を推奨。<strong>手入力＋定型テンプレートへ縮退できる設計を必須とする。</strong> 工数遅延時はリリース1.xへ繰り延べ可（フォールバック前提のフェーズ1目標）。</td>
+<td>Should</td>
+</tr>
+<tr>
+<td>F-010</td>
+<td>商品写真管理</td>
+<td>スマートフォンのカメラ起動・撮影・アップロードを出品フロー内で完結できる。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-011</td>
+<td>商品一覧・詳細表示</td>
+<td>発注者向けに商品一覧（カテゴリ別・バッジ表示含む）と商品詳細（価格・在庫・締切時間・温度帯）を表示する。</td>
+<td>Must</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="52">5.2 発注・決済・アカウント</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>要件ID</th>
+<th>機能名</th>
+<th>要件概要</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-101</td>
+<td>カート</td>
+<td>複数商品をカートに入れ、まとめて発注できる。カート・注文確認画面では商品代金に加え送料（F-110）を計上・表示する。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-102</td>
+<td>簡単発注</td>
+<td>最小限のステップ・タップ数で発注が完結する導線とする（高齢者・アナログ層でも迷わない発注フロー）。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-103</td>
+<td>締切時間表示・管理</td>
+<td>商品ごと（または出品者ごと：要確認）に「何時までの発注で当日発送」の<strong>締切時間を設定・表示</strong>する。締切超過時の扱い（翌営業日発送表示・発注停止等）は要確認のうえ実装する。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-104</td>
+<td>Stripeクレジットカード決済</td>
+<td>Stripeを利用したクレジットカード決済。発注時にオンラインで決済が完結する。決済金額は商品代金＋送料（F-110）の合計とする。<strong>決済確定タイミング（即時決済 or オーソリ→キャプチャ）は第10章#22の確認事項の決定に従う。</strong></td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-105</td>
+<td>注文履歴・注文詳細</td>
+<td>発注者が自身の注文履歴・注文内容・決済状況・返金状況を確認できる。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-106</td>
+<td>受注一覧（出品者向け）</td>
+<td>出品者が自身の商品への注文（受注）を一覧で確認できる。配送先情報（F-109）・温度帯を含む出荷に必要な情報を表示する。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-107</td>
+<td>基本返金・注文取消処理</td>
+<td><strong>管理者操作によるStripe返金API経由の全額返金、および注文取消のシステム処理。</strong> 生鮮品では品質クレーム・欠品（時化による水揚げなし等）が構造的に発生するため、返品ポリシーが未確定の段階でも初期リリースに必須とする。<strong>出品者都合の欠品（在庫確保不能）時の注文取消フロー</strong>（出品者からの取消申請 → 管理者承認 → 全額返金 → 発注者への通知）を含む。<strong>オーソリ取消（キャプチャ前）と返金（キャプチャ後）の両処理を含む</strong>（決済確定タイミングは第10章#22に従う）。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-108</td>
+<td>会員登録・認証</td>
+<td>発注者・出品者自身による会員登録（クローズドβ期間中はQRコード経由のみ：F-205連携）、ログイン、パスワード再設定、プロフィール（氏名・連絡先等）の登録・編集。<strong>高齢者・アナログ層でも完遂できる登録・認証方式（入力項目の極小化、SMS認証等の代替手段）を検討する。</strong></td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-109</td>
+<td>配送先住所管理</td>
+<td>発注者が配送先住所を登録・編集・複数管理し、発注時に選択できる。注文データに配送先を紐付け、出品者の出荷業務（F-106）で参照可能とする。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-110</td>
+<td>送料計算</td>
+<td>発注時に送料を算出しカート・決済金額へ計上する。<strong>送料の負担者・算定方式（商品代金込み/別建て、地域別、クール便区分等）は未確定のため、第10章#1の確認結果を受けて仕様を詳細化する</strong>（要件IDとして本書で確保し、見積り・設計の対象に含める）。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-111</td>
+<td>ポリシーベースのキャンセル・部分返金</td>
+<td>返品・キャンセルポリシー（可否条件・期限・送料負担）に基づく<strong>発注者起点</strong>のキャンセル受付、部分返金、キャンセル料等の自動処理。<strong>ポリシーが未確定のため、第10章#2の確認後に詳細化</strong>する。<strong>本機能はリリース1.x（フェーズ1完了後の機能拡充）に位置づける</strong>（3.2参照）。</td>
+<td>Should</td>
+</tr>
+<tr>
+<td>F-112</td>
+<td>退会・アカウント削除</td>
+<td><strong>アプリ内からのアカウント削除手段を提供する</strong>（App Store Guideline 5.1.1(v)・Google Playアカウント削除ポリシー対応。招待制・クローズドな利用形態でも免除されない）。<strong>未発送注文・未精算売上がある場合の削除制御</strong>を含む。削除時のデータ保持方針は第10章#21に従う。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-113</td>
+<td>利用規約・プライバシーポリシーの表示と同意取得</td>
+<td>利用規約・プライバシーポリシー（および特定商取引法に基づく表記）を表示し、<strong>会員登録時に同意を取得</strong>する。設定画面からの常時参照を提供する。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-114</td>
+<td>プッシュ通知許諾の事前説明導線</td>
+<td>OSの通知許諾ダイアログ表示前に、通知の価値を説明する<strong>事前説明（プレパーミッション）</strong>画面を提供する。新着出品通知はサービスの中核価値であり、許諾取得率が事業KPIに直結するため必須とする。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-115</td>
+<td>エラー時サポート導線・オフライン出品継続</td>
+<td>エラー画面からの<strong>電話サポート導線（tel:発信）</strong>を常設する。通信不安定な現場での出品継続のため、<strong>画像のローカルキュー保存・接続回復時の自動再送</strong>（「あとで自動送信」を正常系として提示）を提供する。</td>
+<td>Must</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="53">5.3 管理・システム</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>要件ID</th>
+<th>機能名</th>
+<th>要件概要</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-201</td>
+<td>3ロール権限管理</td>
+<td>管理者・出品者・発注者の3ロールによる認証・認可。ロールごとに利用可能な画面・操作を制御する（第4章参照）。データ・認証基盤は複数ロール保持可能な設計とする（兼任UIは第10章#23の確定に従う）。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-202</td>
+<td>売上・商品一元管理ダッシュボード</td>
+<td>管理者が売上、商品状況（出品数・在庫・公開状態）、手数料収益を一元的に把握できるダッシュボード。<strong>フェーズ1受入基準</strong>：本日/今月の売上・注文件数・出品数・直近注文・手数料収益（概算）の把握。<strong>リリース1.x拡充</strong>：出品者別・商品別の分析・グラフ。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-203</td>
+<td>プッシュ通知（今日の商品）</td>
+<td><strong>LINE公式アカウントのお知らせのような体験</strong>で、「今日の商品」等の入荷・新着情報を発注者へプッシュ通知する。リアルタイム出品と連動した即時通知を含む。実装方式（アプリPush/LINE連携等）は第7章・第10章で確認。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-204</td>
+<td>通知配信管理</td>
+<td>管理者（および出品者：要確認）が通知の作成・配信・配信履歴確認を行える。</td>
+<td>Should</td>
+</tr>
+<tr>
+<td>F-205</td>
+<td>QRコード限定アクセス制御</td>
+<td>クローズドβ期間中、QRコード（招待経路）経由のユーザーのみ登録・利用可能とする制御。一般公開時に制限を解除できる。会員登録フロー（F-108）の入口を本制御下に置く。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-206</td>
+<td>ユーザー管理</td>
+<td>管理者によるユーザー（出品者・発注者）の登録承認・編集・利用停止。出品者の審査要否は要確認。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-207</td>
+<td>手数料（マージン）設定管理</td>
+<td>管理者がマージン率/額を設定・変更できる。全体一律か、出品者別・カテゴリ別・商品別かの設定粒度は要確認。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-208</td>
+<td>取引明細CSV出力</td>
+<td><strong>税率区分・税額を含む取引明細CSVを出力する</strong>（インボイス実務の当面の受け皿・経理／振込業務用途）。適格請求書の自動発行等の本格対応はリリース1.x以降で税務要件を詰める。</td>
+<td>Must</td>
+</tr>
+<tr>
+<td>F-209</td>
+<td>出品者売上確認</td>
+<td>出品者が自身の売上・受取額を確認できる。<strong>フェーズ1は管理者からの共有で代替可</strong>とし、<strong>画面提供はリリース1.x</strong>とする。受取額表示は価格モデル（F-007＝加算モデル）に従う。</td>
+<td>Should</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="54-wont">5.4 今回対象外（Won't）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>要件ID</th>
+<th>機能名</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-901</td>
+<td>道の駅・温泉施設商品の出品対応</td>
+<td>フェーズ2以降で対応。</td>
+</tr>
+<tr>
+<td>F-902</td>
+<td>請求書払い（掛売り）等の追加決済手段</td>
+<td>要否自体を第10章で確認。フェーズ1はStripeクレジットカード決済のみ。</td>
+</tr>
+<tr>
+<td>F-903</td>
+<td>多言語対応</td>
+<td>フェーズ2以降の検討事項（仮）。</td>
+</tr>
+<tr>
+<td>F-904</td>
+<td>配送業者システムとの自動連携</td>
+<td>リリース1.x以降の検討事項（仮）。配送運用の前提は第10章で確認。</td>
+</tr>
+<tr>
+<td>F-905</td>
+<td>酒類の出品・販売</td>
+<td>通信販売酒類小売業免許の要否確認が必要なため、フェーズ1では対象外（仮）。第10章#6参照。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="6">6. 非機能要件</h2>
+<p>以下の目標値はヒアリングで未確定のため、<strong>すべて仮置き（推奨値）</strong>として提示する。クライアント確認のうえ確定する。</p>
+<h3 id="61">6.1 ユーザビリティ・アクセシビリティ</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>方針・目標（仮）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基本方針</td>
+<td><strong>高齢者・アナログ層でも迷わず使える、極限までシンプルなUI</strong>を最優先の設計原則とする。</td>
+</tr>
+<tr>
+<td>操作ステップ</td>
+<td><strong>リアルタイム出品の必須操作は「①写真を撮る → ②金額（原価）を入れる → ③出品ボタン」の3操作</strong>とする。数量はデフォルト1（変更任意）、温度帯はデフォルト値適用（変更任意）、AI生成・カテゴリ・説明文は任意ステップとする。発注はカート投入から決済完了まで3〜4タップ以内（仮）。会員登録（F-108）も入力項目を極小化し、初回登録の離脱を防ぐ。</td>
+</tr>
+<tr>
+<td>文字・タップ領域</td>
+<td>大きな文字サイズ（本文16px以上・主要ボタンは特大、仮）、十分なタップ領域、高コントラスト配色。</td>
+</tr>
+<tr>
+<td>表現</td>
+<td>専門用語・カタカナIT用語を避けた日本語ラベル。アイコンには必ずテキストを併記（仮）。</td>
+</tr>
+<tr>
+<td>検証</td>
+<td>クローズドβ期間中に実際の高齢の生産者による操作テストを実施し、UIを改善する（推奨）。</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="62">6.2 性能</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>目標（仮）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>画面表示速度</td>
+<td>主要画面の表示3秒以内（通常時、4G回線相当）。</td>
+</tr>
+<tr>
+<td>出品反映</td>
+<td>リアルタイム出品の実行から商品一覧・通知への反映まで1分以内（目標は即時）。</td>
+</tr>
+<tr>
+<td>在庫制御</td>
+<td>同時発注時も売り越しゼロ（在庫引当のトランザクション整合性を保証）。</td>
+</tr>
+<tr>
+<td>同時接続</td>
+<td>クローズドβ：数十〜数百ユーザー規模（仮）。一般公開時の想定規模は要確認。</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="63">6.3 可用性</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>目標（仮）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>稼働率</td>
+<td>99.5%以上（クラウドマネージドサービス利用を前提とした推奨値）。</td>
+</tr>
+<tr>
+<td>重要時間帯</td>
+<td>締切時間前の発注集中時間帯・早朝の出品時間帯の安定稼働を優先。計画メンテナンスはこれらの時間帯を避ける（仮）。</td>
+</tr>
+<tr>
+<td>バックアップ</td>
+<td>データベースの日次バックアップ＋ポイントインタイムリカバリ（推奨）。</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="64">6.4 セキュリティ</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>方針（仮・推奨）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>通信</td>
+<td>全通信のTLS暗号化（HTTPS必須）。</td>
+</tr>
+<tr>
+<td>決済情報</td>
+<td>カード情報は自社サーバーで保持せず、<strong>Stripeのトークン化決済を利用</strong>（PCI DSS準拠範囲の最小化）。</td>
+</tr>
+<tr>
+<td>認証・認可</td>
+<td>ロールベースアクセス制御（3ロール）。パスワードポリシー・セッション管理の適切な実装。高齢者向けの認証代替手段（F-108）採用時もセキュリティ水準を維持する。</td>
+</tr>
+<tr>
+<td>クローズド統制</td>
+<td>QRコード招待経由以外の登録遮断、招待コードの推測困難性確保。</td>
+</tr>
+<tr>
+<td>個人情報</td>
+<td>個人情報保護法に準拠した取扱い（配送先住所等の個人情報を含む）。プライバシーポリシー整備（F-113、要クライアント確認）。</td>
+</tr>
+<tr>
+<td>脆弱性対策</td>
+<td>OWASP Top 10相当の対策、リリース前の脆弱性診断実施（推奨）。</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="65">6.5 拡張性</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>方針（仮・推奨）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>事業拡張</td>
+<td>道の駅・温泉施設商品、市町村横展開、数百億円規模GMV構想を見据え、<strong>出品主体・地域・商品種別を追加可能なデータ設計</strong>とする。</td>
+</tr>
+<tr>
+<td>スケール</td>
+<td>クラウド上でのスケールアウト可能な構成（オートスケール、CDN活用等）を推奨。</td>
+</tr>
+<tr>
+<td>機能拡張</td>
+<td>決済手段追加・通知チャネル追加・AI機能拡張を想定した疎結合な外部連携設計。</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="66">6.6 保守性</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>項目</th>
+<th>方針（仮・推奨）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>監視</td>
+<td>死活監視・エラー監視・決済失敗の検知と通知。</td>
+</tr>
+<tr>
+<td>ログ</td>
+<td>操作ログ・決済ログ・通知配信ログの保全（保存期間は要確認）。</td>
+</tr>
+<tr>
+<td>運用</td>
+<td>管理画面からのマスタ（カテゴリ・手数料・ユーザー）変更により、開発ベンダーに依存せず日常運用が可能な設計。</td>
+</tr>
+<tr>
+<td>ドキュメント</td>
+<td>運用手順書・管理者マニュアルの整備（納品物範囲は要確認）。</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="7">7. 外部サービス連携</h2>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>連携先</th>
+<th>用途</th>
+<th>状態</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stripe</td>
+<td>クレジットカード決済（決済・返金・決済履歴）。将来的にStripe Connect等による出品者への分配・振込自動化も選択肢（推奨・要確認）。<strong>なお、運営が発注者から代金を収受し出品者へ分配するスキームは資金決済法上の論点（第10章#5）に関わるため、Stripe Connectの採用可否は取引スキーム（買取再販／仲介）の確定および法務確認と一体で決定する。</strong></td>
+<td>利用確定（ヒアリング指定）</td>
+</tr>
+<tr>
+<td>プッシュ通知基盤</td>
+<td>「今日の商品」通知の配信。候補と方式別の主な制約は以下のとおり（#7 端末方針と相互依存）。<br><strong>(a) ネイティブアプリ＋FCM/APNs</strong>：通知の確実性・体験は最良だが、App Store/Google Playのストア審査リードタイム（初回・更新とも）と開発工数が増加。<br><strong>(b) PWA/Webアプリ＋Webプッシュ</strong>：開発効率は高いが、<strong>iOSはiOS 16.4以降かつ「ホーム画面に追加」操作が前提</strong>であり、高齢者ユーザーには導入障壁が大きい。<br><strong>(c) LINE公式アカウント＋Messaging API</strong>：ユーザーの導入障壁が最も低く「LINE公式アカウント的体験」に合致するが、<strong>配信数に応じた従量課金</strong>が発生し、通知量の増加がランニングコストに直結する。フェーズ1はアプリPush（FCM）を推奨・LINE連携はリリース1.xとする回答案（第10章#8参照）。</td>
+<td>方式未確定（第10章#7・#8で確認）</td>
+</tr>
+<tr>
+<td>AI API</td>
+<td>商品タイトル・説明文の自動生成（F-008/F-009）。候補：Anthropic Claude API、OpenAI API等（仮）。<strong>手入力＋定型テンプレートへ縮退できる設計を前提とする。</strong> API利用コストの負担・上限方針は要確認。</td>
+<td>採用可否・選定とも未確定（F-008/F-009ともにShould・フォールバック前提のフェーズ1目標）</td>
+</tr>
+<tr>
+<td>画像ストレージ/CDN</td>
+<td>商品写真の保存・配信（クラウドストレージ＋CDN、仮）。</td>
+<td>推奨（技術選定時に確定）</td>
+</tr>
+<tr>
+<td>QRコード</td>
+<td>クローズドβの招待導線として利用（生成は自前実装または汎用ライブラリで対応可能、仮）。</td>
+<td>方式は設計時に確定</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="8">8. リリース計画・マイルストーン案</h2>
+<p>開発期間3〜4ヶ月を前提としたスケジュール案（仮）。契約締結・要件確定日を起点に調整する。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>期間</th>
+<th>フェーズ</th>
+<th>主な内容</th>
+<th>マイルストーン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第1月 前半</td>
+<td>要件確定・設計</td>
+<td>本書の確認事項回収、要件確定、UI設計（シンプルUIプロトタイプ）、技術選定（アプリ形態・通知方式）、外部サービス契約（Stripe等）</td>
+<td>要件定義確定 / UIプロトタイプ承認</td>
+</tr>
+<tr>
+<td>第1月 後半〜第2月</td>
+<td>開発スプリント1</td>
+<td>認証・会員登録（F-108）・退会（F-112）・規約同意（F-113）・3ロール権限、商品管理（定期出品・温度帯・カテゴリ・公開制御）、商品一覧・詳細</td>
+<td>中間デモ①（登録〜出品〜閲覧）</td>
+</tr>
+<tr>
+<td>第2月〜第3月 前半</td>
+<td>開発スプリント2</td>
+<td>リアルタイム出品、在庫制御、自動マージン計算、配送先住所管理・送料計算、カート・発注・Stripe決済、基本返金・注文取消処理、締切時間管理</td>
+<td>中間デモ②（発注〜決済〜返金）</td>
+</tr>
+<tr>
+<td>第3月</td>
+<td>開発スプリント3</td>
+<td>ダッシュボード、取引明細CSV、プッシュ通知（通知許諾事前説明F-114）、QR限定アクセス、（AI生成機能※工数と優先度によりリリース1.xへ繰延判断）</td>
+<td>機能開発完了（フィーチャーフリーズ）</td>
+</tr>
+<tr>
+<td>第3月 後半〜第4月 前半</td>
+<td>テスト</td>
+<td>結合テスト、決済・返金テスト、脆弱性診断（推奨）、高齢者ユーザビリティテスト（推奨）</td>
+<td>受入テスト（UAT）完了</td>
+</tr>
+<tr>
+<td>第4月</td>
+<td>クローズドβ</td>
+<td><strong>QRコード配布による限定ユーザー提供開始</strong>、実運用テスト、フィードバック改修</td>
+<td>クローズドβ開始</td>
+</tr>
+<tr>
+<td>クローズドβ後</td>
+<td>一般公開判断</td>
+<td>β結果評価、公開判断、QR制限解除</td>
+<td><strong>一般公開（GA）</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>※ 一般公開の時期・判断基準、およびクローズドβの期間（開発4ヶ月内に含めるか、その後に置くか）は要確認（第10章）。</p>
+<hr />
+<h2 id="9">9. 前提条件・制約事項</h2>
+<h3 id="91">9.1 前提条件</h3>
+<ol>
+<li>開発期間は3〜4ヶ月とする（フェーズ1）。</li>
+<li>決済はStripeを利用し、クライアント名義のStripeアカウントを開設できること（審査通過を含む）。</li>
+<li>初期リリースはQRコード経由のクローズド提供とし、一般公開はテスト後にクライアント判断で行う。</li>
+<li>商品マスタ初期データ・出品者の初期リスト・QR配布先はクライアントが準備する（仮・要確認）。</li>
+<li>利用規約・特定商取引法表記・プライバシーポリシー等の法務文書はクライアント側で内容確定する（作成支援の範囲は要確認）。</li>
+<li>配送業務（梱包・出荷・配送手配）の実務は出品者またはクライアント運用側が担い、システムは注文・配送先情報の提供と送料計上（F-109/F-110）までを担当範囲とする（仮・第10章#1で確認）。</li>
+</ol>
+<h3 id="92">9.2 制約事項</h3>
+<ol>
+<li>3〜4ヶ月の開発期間内に収めるため、機能はMoSCoWのMustを最優先で実装し、Should（AI生成機能等）は工数状況によりリリース1.xへ繰り延べる場合がある。<strong>なお、基本返金・注文取消処理（F-107）はカード決済を伴うECのローンチ必須機能としてMustに位置付け、繰り延べ対象としない。</strong></li>
+<li>決済手数料はStripe所定の料率に従う。<strong>出品者への入金はStripeが提供する入金スケジュール設定に従う（実装時点の最新仕様を確認）。</strong></li>
+<li>LINE連携を採用する場合、LINE公式アカウント・Messaging APIの利用料金体系（配信数課金）と審査に依存する。</li>
+<li>AI生成機能の出力品質はAIモデルに依存するため、出品者による確認・修正を前提とした運用とする。</li>
+<li>生鮮品の品質・配送・在庫の現物差異など、システム外のオペレーションに起因する事象はシステム保証の対象外とする（運用ルールで補完。第10章参照）。</li>
+<li>代金収受・分配のスキーム（第10章#5）の法務確認結果によっては、決済フロー・入金フローの設計に制約が生じる可能性がある。</li>
+</ol>
+<hr />
+<h2 id="10">10. 未確定事項・クライアント確認事項</h2>
+<p>ヒアリングで言及がなかった、事業運営・システム仕様の双方に影響する重要論点を以下に整理する。<strong>優先度「高」は要件確定（開発着手）前の回答が必須。</strong></p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>分類</th>
+<th>確認事項</th>
+<th>論点・選択肢（例）</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>物流・配送</td>
+<td>配送・送料の扱いと物流責任分界点</td>
+<td><strong>配送（宅配）か直接受け渡し（対面）かの取引形態、およびそれに伴う配送先住所入力の要否（F-109の要否・スコープを左右）。</strong> 送料は誰が負担・設定するか（商品込み/別建て/地域別）。配送手配は出品者責任か運営側手配か。クール便（冷蔵・冷凍）対応の要否。誤配・破損時の責任所在。<strong>回答はF-109（配送先住所管理）・F-110（送料計算）の仕様に直結。</strong></td>
+<td>高</td>
+</tr>
+<tr>
+<td>2</td>
+<td>取引ルール</td>
+<td>返品・キャンセルポリシー</td>
+<td>生鮮品の特性上、返品可否・期限・返金条件・送料負担をどうするか。F-111（ポリシーベースのキャンセル・部分返金）の仕様に直結。なお基本返金処理（F-107）はポリシー未確定でもMustとして実装する。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>3</td>
+<td>決済</td>
+<td>請求書払い（掛売り）の要否</td>
+<td>発注者が飲食店等の事業者の場合、月締め請求書払いのニーズが強い可能性。フェーズ1はカードのみで良いか。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>4</td>
+<td>税務</td>
+<td>インボイス制度（適格請求書）対応</td>
+<td>出品者の適格請求書発行事業者登録の有無が混在する想定か。プラットフォームとしての領収書・請求書発行方式（媒介者交付特例の要否）。免税事業者の扱い。フェーズ1はF-208（税率区分・税額付きCSV）で受け、本格対応はリリース1.x以降。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>5</td>
+<td>資金フロー・取引スキーム</td>
+<td>取引スキームの確定と、出品者への売上振込スキーム・手数料負担（<strong>最優先確認事項</strong>）</td>
+<td><strong>まず取引スキームを【買取再販モデル（プラットフォームが売主。Stripe Payments単体で成立し、在庫・売れ残りリスクを運営が負う）】とするか【マーケットプレイス（仲介）モデル（Stripe Connect推奨、資金決済法論点を回避する構成）】とするかを確定する。</strong> その上で、運営が売上を預かり月次等で振込むのか、Stripe Connectで自動分配するのか、振込手数料・決済手数料の負担者を決める。仲介モデルで運営が代金を収受し分配する構成は、資金決済法上の為替取引該当性（資金移動業登録の要否）という法的論点を伴うため、登録を回避するスキーム設計（出品者からの代理受領（収納代行）権限の取得、またはStripe Connectによる出品者への直接分配）を法務確認の上で決定する。</td>
+<td>高（最優先）</td>
+</tr>
+<tr>
+<td>6</td>
+<td>法令</td>
+<td>特定商取引法・食品表示法・許認可への対応</td>
+<td>特商法表記の主体（運営かモール型として各出品者か）。食品表示（名称・産地・消費期限等）の入力必須項目化の要否。営業許可（魚介類販売業等）の確認フロー。<strong>酒類を扱う場合は通信販売酒類小売業免許の要否確認（フェーズ1では酒類を対象外とする仮置き（3.3章）の妥当性確認を含む）。</strong></td>
+<td>高</td>
+</tr>
+<tr>
+<td>7</td>
+<td>端末・技術</td>
+<td>対応OS/端末・アプリ形態</td>
+<td>「スマホアプリで完結」はヒアリング確定要件だが、iOS/Androidネイティブ、クロスプラットフォーム、PWA/Webアプリのいずれの実装形態とするかは未確定。対応OSバージョン下限。高齢者の保有端末の実態。プッシュ通知方式の選定（#8）と相互に影響（<strong>PWA選択時、iOSのWebプッシュはiOS 16.4以降＋ホーム画面追加が前提となる点に留意。第7章参照</strong>）。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>8</td>
+<td>通知</td>
+<td>LINE連携の実装方式</td>
+<td>「LINE公式アカウント的体験」を、(a) LINE公式アカウント＋Messaging APIで実現するか、(b) アプリ内プッシュ通知で類似体験を実現するか。LINEの配信課金コストの許容度。方式別の制約比較は第7章参照（フェーズ1はアプリPush、LINE連携はリリース1.xが回答案）。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>9</td>
+<td>発注者属性</td>
+<td>発注者のターゲット定義</td>
+<td>発注者は飲食店・百貨店・惣菜工場等の事業者（BtoB）に限るか、一般消費者（BtoC）へも開放するか。#1〜#4の前提となる。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>10</td>
+<td>締切・出荷</td>
+<td>締切時間の設定粒度と超過時の挙動</td>
+<td>締切はプラットフォーム共通か、出品者別か、商品別か。締切超過後は「翌日発送表示」か「発注停止」か。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>11</td>
+<td>運用体制</td>
+<td>リリース後の運用体制</td>
+<td>問い合わせ窓口（出品者・発注者向け）、出品者サポート（操作教育）、監視・障害対応の一次窓口、運用時間帯。保守契約の範囲。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>12</td>
+<td>出品者管理</td>
+<td>出品者の審査・本人確認</td>
+<td>出品者登録時の審査要否（営業許可証・本人確認書類の確認等）。クローズドβでは招待制のため簡略化可か。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>13</td>
+<td>手数料設計</td>
+<td>マージンの設定粒度・料率</td>
+<td>全体一律か、カテゴリ別・出品者別・商品別か。具体的な料率水準。端数処理ルール（税込/税抜、円未満処理）。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>14</td>
+<td>消費税</td>
+<td>税率・税込表示の扱い</td>
+<td>食品の軽減税率（8%）と非食品等（10%）の混在可能性。価格の税込/税抜表示方針。（酒類（10%）の取扱い可否は#6の許認可論点とあわせて確認。）</td>
+<td>中</td>
+</tr>
+<tr>
+<td>15</td>
+<td>バッジ運用</td>
+<td>「NEW」「人気」の付与ルール</td>
+<td>手動付与か自動付与か（新着○日間、販売数上位等の自動化条件）。出品者への付与権限の有無。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>16</td>
+<td>β計画</td>
+<td>クローズドβの規模・期間・一般公開の判断基準</td>
+<td>参加出品者数・発注者数、テスト期間、一般公開のGo/No-Go基準。QRコードの配布方法。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>17</td>
+<td>AI機能</td>
+<td>AI生成機能の採否と費用負担</td>
+<td>F-008/F-009（ともにShould）をフェーズ1に含めるか、リリース1.xへ繰り延べるか。AI API利用コストの負担方針と月次上限。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>18</td>
+<td>法務文書</td>
+<td>利用規約・プライバシーポリシーの作成体制</td>
+<td>クライアント側の顧問弁護士確認の有無。ドラフト作成の支援範囲。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>19</td>
+<td>ブランド</td>
+<td>サービス名・ドメイン・ロゴ</td>
+<td>サービス名称、ドメイン取得、ロゴ・ブランドカラーの支給有無。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>20</td>
+<td>データ</td>
+<td>ログ・データの保存期間、分析要件</td>
+<td>注文・操作ログの保存期間。将来の自治体展開を見据えたデータ分析・レポート要件の有無。</td>
+<td>低</td>
+</tr>
+<tr>
+<td>21</td>
+<td>データ</td>
+<td>退会時のデータ保持方針</td>
+<td>退会（F-112）時、未発送注文・未精算売上がある場合の削除制御。Stripe顧客データ・取引履歴の削除／保持方針（法定保存義務との整合）。</td>
+<td>中</td>
+</tr>
+<tr>
+<td>22</td>
+<td>決済</td>
+<td>決済確定タイミング</td>
+<td>即時決済か、オーソリ（与信枠確保）→キャプチャ（売上確定）か。F-104／F-107の実装に直結。オーソリ有効期間（通常7日）と締切〜出荷確定リードタイムの整合検証を含む。</td>
+<td>高</td>
+</tr>
+<tr>
+<td>23</td>
+<td>アカウント</td>
+<td>兼任アカウントの有無</td>
+<td>発注者・出品者の兼任アカウントを認めるか。データ・認証基盤は複数ロール保持可能な設計とし、フェーズ1のUIはログイン時のロールに応じた1ロール表示固定とする（本書の仮置き方針）。</td>
+<td>中</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="a">付録A. 本ドラフトの前提と今後の進め方</h2>
+<ol>
+<li>本書は初回ヒアリングの内容を要件として整理したドラフトであり、ヒアリングにない事項は「（仮）」「推奨」として明示した。</li>
+<li><strong>【確定版への昇格条件：確認事項の回収】</strong> 次回打ち合わせにて第10章（特に優先度「高」の項目）の回答を回収する。</li>
+<li>確認事項の回収完了をもって要件定義書を確定版（v1.0）へ更新し、その後、画面設計（ワイヤーフレーム）・技術選定・詳細見積り・開発スケジュール確定に進む。</li>
+</ol>
+<p>以上</p></div></article><article class="doc" data-doc="screens" hidden><header class="masthead"><div class="mh-kick"><span class="mh-code">02</span>SCREENS</div><h1 class="mh-title">画面一覧・画面遷移案</h1><p class="mh-sub">全47画面の一覧、ロール別の画面遷移図、フェーズ切り分け</p></header><div class="prose"><ul>
+<li>作成日: 2026-07-16</li>
+<li>作成者: ITコンサルタント／システムエンジニア</li>
+<li>ドキュメント種別: 要件定義フェーズ成果物（画面一覧・画面遷移案）</li>
+<li>ステータス: <strong>ドラフト（確認事項〔4.3〕の回答をもって確定）</strong></li>
+</ul>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>版</th>
+<th>日付</th>
+<th>変更内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-07-16</td>
+<td>初版ドラフト作成</td>
+</tr>
+<tr>
+<td>1.1</td>
+<td>2026-07-16</td>
+<td>レビュー指摘反映（退会・規約同意・通知許諾画面の追加、資金決済法・インボイス制度・決済確定タイミングの設計前提化、フェーズ間の整合修正 等）</td>
+</tr>
+<tr>
+<td>1.2</td>
+<td>2026-07-17</td>
+<td>3ドキュメント間整合性レビュー反映（価格モデル＝加算モデルで統一、温度帯・送料・配送先住所・退会等の画面反映、フェーズ用語を「リリース1.x」へ整理、AIタイトル生成の画面対応、要件ID〔F-xxx〕相互対応、欠品時キャンセル申請の画面追加 等）</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>本書は初回ヒアリングに基づくドラフトであり、確認事項（4.3）の回答をもって確定版へ更新します。要件骨子に明記のない事項は「推奨」「仮置き」と明示しています。</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 前提・方針</h2>
+<h3 id="11">1.1 アプリ構成の推奨案</h3>
+<h4 id="1-1">(1) 発注者アプリ／出品者アプリの構成 → <strong>1つのアプリ内でロール分岐（推奨）</strong></h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>1アプリ・ロール分岐（推奨）</th>
+<th>2アプリ分離</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>開発コスト</td>
+<td>◎ 認証・通知・共通UIを1本で共有</td>
+<td>△ 2本分の実装・ビルド管理</td>
+</tr>
+<tr>
+<td>ストア申請・審査</td>
+<td>◎ iOS/Android各1本の申請で済む</td>
+<td>△ 各2本（計4申請）の維持が必要</td>
+</tr>
+<tr>
+<td>保守・アップデート</td>
+<td>◎ 修正が1回で全ロールに反映</td>
+<td>△ 2本同時リリースの調整コスト</td>
+</tr>
+<tr>
+<td>利用者の迷いにくさ</td>
+<td>○ ログインアカウントの権限で自動的に画面を出し分ければ迷わない</td>
+<td>◎ アプリ名で役割が明確</td>
+</tr>
+<tr>
+<td>将来の拡張（1ユーザーが両ロールを持つ場合）</td>
+<td>◎ アカウント切替で対応可能</td>
+<td>△ アプリを行き来する必要</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>推奨理由</strong>: 開発期間3〜4ヶ月・招待制のクローズドな利用者層という条件では、開発・審査・保守の負荷を最小化できる1アプリ構成が合理的です。ログイン時にサーバー側で保持するロール（発注者／出品者）に応じて<strong>起動後の画面を完全に出し分ける</strong>ため、利用者がロール選択で迷うことはありません。
+※データ・認証基盤は<strong>複数ロールを保持可能な設計</strong>とし（技術文書2-10の通り）、<strong>フェーズ1のUIはログイン時のロールに応じた1ロール表示固定</strong>とします（本書の画面前提は、この「UI上の制約」として再定義しています）。兼任アカウント（発注者・出品者の兼任）の有無は要件定義書 第10章の確認事項とします。</p>
+<h4 id="2-web">(2) 管理者画面 → <strong>Web管理画面（ブラウザ）で提供（推奨）</strong></h4>
+<ul>
+<li>商品・ユーザー・注文の一覧管理、マージン率設定、CSV出力等は<strong>大画面＋キーボード操作が前提の業務</strong>であり、モバイルアプリより Web が適切。</li>
+<li>アプリのストア審査を経由せず<strong>即日で機能追加・修正が可能</strong>。運用開始直後の調整が多い管理機能に向く。</li>
+<li>PC を持たない管理者が外出先で確認するケースに備え、<strong>レスポンシブ対応（スマホブラウザ閲覧可）を推奨</strong>（仮置き）。</li>
+</ul>
+<h4 id="3-ux">(3) 高齢者向けUX原則（出品者側を中心に全画面へ適用）</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>原則</th>
+<th>具体策</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>出品は3操作</strong></td>
+<td>必須操作は「①写真を撮る → ②金額（原価）を入れる → ③出品ボタン」の<strong>3操作</strong>で完結。数量はデフォルト1（変更任意）、温度帯はデフォルト値適用（変更任意）、AI生成・カテゴリ・説明文は任意ステップ（後から編集／管理者が補完）とする</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>文字とボタンを大きく</strong></td>
+<td>本文フォントは 18pt（iOS）／18sp（Android）以上を目安。タップ領域は各プラットフォーム標準の最小値（<strong>iOS HIG: 44×44pt、Android: 48×48dp</strong>。参考: WCAG 2.5.5 / 2.5.8）を下限とし、主要ボタンはこれを明確に上回る<strong>高さ56pt/dp以上</strong>を推奨（推奨値。UI設計時に実機検証のうえ確定）</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>階層を浅く</strong></td>
+<td>ホームから2タップ以内で主要機能へ到達。下部タブ＋一覧→詳細の2階層を基本とし、3階層以上のドリルダウンを作らない</td>
+</tr>
+<tr>
+<td>4</td>
+<td>迷わせない導線（推奨）</td>
+<td>戻る先を常に明示、専門用語を使わない（例:「公開」→「売り場に出す」等の文言はUI検討時に協議）、破壊的操作は大きな確認ダイアログ</td>
+</tr>
+<tr>
+<td>5</td>
+<td>入力を減らす（推奨）</td>
+<td>金額は<strong>原価（お渡し希望額）をテンキー直接入力</strong>（マージン加算後の販売価格は自動算出）、定期商品は数量のみ入力、説明文はAI生成（Should）または後から編集で代替</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="12">1.2 法令・ストア審査上の必須対応（設計前提の重大論点）</h3>
+<p>以下は「確認事項」ではなく<strong>設計の前提として対応必須（または方針決定必須）の論点</strong>です。対応漏れはストア審査リジェクトや法令違反リスクに直結するため、フェーズ1の範囲に組み込んでいます。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>論点</th>
+<th>対応方針</th>
+<th>影響画面</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>アカウント削除（退会）</strong></td>
+<td>App Store Review Guideline 5.1.1(v) により、アプリ内でアカウント登録（招待経由を含む）を提供するアプリは<strong>アプリ内からのアカウント削除手段の提供が必須</strong>（Google Play の「アカウント削除」ポリシーも同様）。招待制・クローズドな利用形態でも免除されない。要件ID <strong>F-112</strong> で要件化</td>
+<td><strong>Z-04（退会）を新設しフェーズ1必須</strong>。C-15／S-12 から導線</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>利用規約・プライバシーポリシー</strong></td>
+<td>会員登録で個人情報（氏名・電話・住所）とStripe決済情報を扱うため、個人情報保護法上の利用目的の明示と、App Store／Google Play 審査で要求されるプライバシーポリシーへの導線は必須。<strong>登録時の同意取得＋設定画面からの常時参照</strong>を提供する。要件ID <strong>F-113</strong> で要件化</td>
+<td><strong>Z-03（規約・ポリシー表示/同意）を新設しフェーズ1必須</strong>。C-02・C-15・S-12 に導線</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>特定商取引法に基づく表記</strong></td>
+<td>発注者に一般消費者が含まれる場合（BtoC）は掲載必須。事業者限定（BtoB）でも掲載が望ましい。発注者の属性はヒアリング未確認のため確認事項（4.3-7）</td>
+<td>Z-03 に併載</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>インボイス制度・消費税（軽減税率）</strong></td>
+<td>飲食店等の事業者が仕入として購入する場合、買い手の仕入税額控除のため<strong>適格請求書（インボイス）対応が実務上ほぼ必須</strong>。発行主体（出品者発行か、プラットフォームによる<strong>媒介者交付特例</strong>か）の設計と、<strong>出品者の課税/免税区分の管理</strong>が必要（一次産業の出品者には免税事業者が多い可能性が高い）。食品は軽減税率8%が基本（酒類等は10%）で税率管理も必要。要否・方式は確認事項（4.3-8）だが、帳票仕様に直結するため<strong>フェーズ1設計前に方針確定が必要</strong>。当面はフェーズ1で税率区分・税額を含む取引明細CSV（F-208/A-10）を受け皿とする</td>
+<td>C-13（領収書/適格請求書表示）、S-10、S-12（課税区分）、A-10（取引明細CSV・帳票出力）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="13">1.3 決済・精算スキームの前提（設計前提の重大論点）</h3>
+<h4 id="1_1">(1) 精算スキーム — 資金決済法上の論点（<strong>要否確認ではなく方式選定が必須</strong>）</h4>
+<ul>
+<li>プラットフォーム運営会社が購入代金を<strong>いったん自社で収受し、後日出品者へ分配する</strong>構成は、資金決済法上の<strong>為替取引（資金移動業の登録が必要）に該当し得る重大な法的論点</strong>があります。</li>
+<li>このため、<strong>Stripe Connect 等を用いて「代金が出品者に直接帰属し、プラットフォームは手数料（アプリケーションフィー）のみを受領する」スキームを推奨</strong>します。代替として売買契約に基づく「代理受領」構成の法的整理も選択肢ですが、いずれの場合も<strong>弁護士等専門家の確認を、フェーズ1の詳細設計着手前に完了させることを必須マイルストーン</strong>として設定してください。</li>
+<li>なお、要件定義書 第10章#5では、本論点を<strong>取引スキーム（買取再販 or 仲介）の確定</strong>を含む形で最優先確認事項としています。買取再販モデル（プラットフォームが売主）か、マーケットプレイス（仲介）モデルかにより決済構成が変わるため、その確定を待って本節の推奨を精緻化します。</li>
+<li>本論点は S-12（振込先情報の要否）、S-10（受取額表示）、A-09（手数料）、A-11（返金）の画面仕様に直結します。</li>
+</ul>
+<h4 id="2">(2) 決済確定タイミング — 即時決済 か オーソリ→キャプチャ か</h4>
+<p>締切時間後に出品者が在庫・出荷を確定する業務フローでは、注文時に即時決済すると<strong>欠品・キャンセル時に返金が多発</strong>します。カード決済の業界標準である「<strong>注文時オーソリ（与信枠確保）→締切後・出荷確定時キャプチャ（売上確定）</strong>」との比較検討が必要です。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>即時決済（注文確定時に売上確定）</th>
+<th>オーソリ→キャプチャ（推奨・仮置き）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>実装の単純さ</td>
+<td>◎ 単純</td>
+<td>○ 部分キャプチャ・オーソリ取消の設計が必要</td>
+</tr>
+<tr>
+<td>欠品・キャンセル時</td>
+<td>△ 返金処理が多発（手数料・入金ズレの運用負荷）</td>
+<td>◎ オーソリ取消のみで返金不要。出荷確定分だけ請求可能</td>
+</tr>
+<tr>
+<td>制約</td>
+<td>—</td>
+<td>△ Stripeのカード決済のオーソリ有効期間（<strong>通常7日</strong>）内のキャプチャが必須</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>推奨（仮置き）</strong>: オーソリ→キャプチャ方式。ただし<strong>締切〜出荷確定のリードタイムが7日を超えるケースの有無</strong>を含め、決済フロー全体を確認事項（4.3-4）として次回打ち合わせで確定します。A-11 の返金運用はこの決定後に詳細化します。
+※本項は要件定義書 第10章「決済確定タイミング（即時決済 or オーソリ→キャプチャ）」（優先度・高）と相互参照します。オーソリ有効期間（通常7日）と締切〜出荷確定リードタイムの整合検証を含みます。</p>
+<h3 id="14-fr-f-xxx">1.4 機能要件との対応（FR番号と要件定義書 F-xxx の対応）</h3>
+<p>画面一覧表の「対応する機能要件」列は、本書独自の機能要件番号（FR-xx）を参照します。各FR番号と要件定義書の要件ID（F-xxx）の対応は以下のとおりです。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>FR番号</th>
+<th>機能要件</th>
+<th>要件定義書対応（F-xxx）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>招待制アカウント登録（QRコード・招待コード）</td>
+<td>F-205 / F-108</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>ログイン認証・パスワード管理</td>
+<td>F-108</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>本日の商品フィード表示・注文締切時間表示</td>
+<td>F-011 / F-103</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>商品カテゴリ分類・商品検索</td>
+<td>F-003 / F-011</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>商品詳細表示（バッジ・在庫数・締切）</td>
+<td>F-011 / F-004</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>カート・注文確定</td>
+<td>F-101 / F-102</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>オンライン決済（Stripe）</td>
+<td>F-104</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>注文履歴・注文詳細の確認</td>
+<td>F-105</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>プッシュ通知（新着出品・締切前リマインド・お知らせ）</td>
+<td>F-203</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>リアルタイム出品（写真→金額→出品の最短フロー）</td>
+<td>F-002</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>定期商品テンプレートからの出品（数量入力のみ）</td>
+<td>F-001</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>商品編集（カテゴリ・バッジ・在庫・AIタイトル/説明文生成）</td>
+<td>F-003 / F-004 / F-006 / F-008 / F-009</td>
+</tr>
+<tr>
+<td>FR-13</td>
+<td>出品の公開／非公開切替</td>
+<td>F-005</td>
+</tr>
+<tr>
+<td>FR-14</td>
+<td>受注一覧・発送管理</td>
+<td>F-106</td>
+</tr>
+<tr>
+<td>FR-15</td>
+<td>出品者の売上確認</td>
+<td>F-209</td>
+</tr>
+<tr>
+<td>FR-16</td>
+<td>管理ダッシュボード（売上・注文サマリー）</td>
+<td>F-202</td>
+</tr>
+<tr>
+<td>FR-17</td>
+<td>全商品管理・カテゴリ管理・バッジ付与</td>
+<td>F-003 / F-004 / F-005</td>
+</tr>
+<tr>
+<td>FR-18</td>
+<td>ユーザー管理（アカウント発行・権限・招待QR発行）</td>
+<td>F-206 / F-205</td>
+</tr>
+<tr>
+<td>FR-19</td>
+<td>手数料（マージン率）設定</td>
+<td>F-207</td>
+</tr>
+<tr>
+<td>FR-20</td>
+<td>注文管理（管理者）</td>
+<td>F-105 / F-107</td>
+</tr>
+<tr>
+<td>FR-21</td>
+<td>注文締切時間の設定</td>
+<td>F-103</td>
+</tr>
+<tr>
+<td>FR-22</td>
+<td>お知らせ／プッシュ通知の配信管理</td>
+<td>F-204</td>
+</tr>
+<tr>
+<td>FR-23</td>
+<td>アカウント設定（プロフィール・通知設定等）</td>
+<td>F-108</td>
+</tr>
+<tr>
+<td>FR-24</td>
+<td>アカウント削除（退会）</td>
+<td>F-112</td>
+</tr>
+<tr>
+<td>FR-25</td>
+<td>利用規約・プライバシーポリシーの表示・同意</td>
+<td>F-113</td>
+</tr>
+<tr>
+<td>FR-26</td>
+<td>送料計算・表示</td>
+<td>F-110</td>
+</tr>
+<tr>
+<td>FR-27</td>
+<td>欠品時の注文取消申請・承認</td>
+<td>F-107</td>
+</tr>
+</tbody>
+</table></div>
+<p>※プッシュ通知許諾の事前説明導線（Z-05）は要件 <strong>F-114</strong> に対応します（FR-09関連。OSの通知許諾ダイアログ前のプレパーミッション）。
+※配送先住所管理（C-16）は要件 <strong>F-109</strong> に対応します（FR番号は付与せず F-xxx を直接参照）。
+※FR-09 のうち「締切前リマインド」、FR-15（F-209）の集計粒度などの詳細仕様はヒアリング未確定のため仮置きです。</p>
+<hr />
+<h2 id="2_1">2. 画面一覧表</h2>
+<p>優先度の定義: <strong>高</strong>＝フェーズ1（初回リリース）必須 ／ <strong>中</strong>＝フェーズ1で簡易版 or リリース1.x ／ <strong>低</strong>＝リリース1.x以降。
+（「フェーズ2」＝道の駅・温泉施設・自治体横展開等の<strong>事業拡大</strong>を指す用語として要件定義書3章で定義。リリース直後の機能拡充は「リリース1.x」と表記します。）</p>
+<h3 id="21">2.1 発注者向け（モバイルアプリ／ロール: 発注者）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>画面ID</th>
+<th>画面名</th>
+<th>概要</th>
+<th>主な表示要素・操作</th>
+<th>対応する機能要件</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C-01</td>
+<td>スプラッシュ／初回起動</td>
+<td>アプリ起動画面。未登録者は招待QR読み取り・招待コード入力へ誘導</td>
+<td>ロゴ、「QRコードを読み取る」「招待コードを入力」「ログイン」ボタン</td>
+<td>FR-01, FR-02</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-02</td>
+<td>会員登録（招待経由）</td>
+<td>招待QR/コード検証後にアカウント情報を登録</td>
+<td>招待コード検証結果、事業者名・氏名・電話・メール・パスワード入力、配送先住所（<strong>直接受け渡しの有無〔要件書第10章#1〕により要否変動</strong>）、<strong>利用規約・プライバシーポリシーへの同意（Z-03参照）</strong>、登録ボタン。登録完了後は Z-05（通知許諾の事前説明）へ</td>
+<td>FR-01, FR-02, FR-25</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-03</td>
+<td>ログイン</td>
+<td>登録済みユーザーの認証</td>
+<td>メール（またはID）・パスワード、ログインボタン、パスワード再設定導線</td>
+<td>FR-02</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-04</td>
+<td>パスワード再設定</td>
+<td>メール経由でのパスワード再設定</td>
+<td>メール入力、再設定リンク送信、新パスワード設定 ※高齢者UXの観点で SMS/メールのワンタイムコード方式（パスワードレスログイン）も比較検討（4.3-11）</td>
+<td>FR-02</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-05</td>
+<td>ホーム（本日の商品フィード）</td>
+<td>本日出品された商品を時系列フィードで表示。各商品に注文締切時間を明示</td>
+<td>本日の商品カード（写真大・価格・出品者・バッジ・<strong>締切時間/残り時間</strong>・<strong>売り切れ表示</strong>）、お知らせバナー（配信元はA-13簡易版・フェーズ1）、下部タブ</td>
+<td>FR-03, FR-05, FR-09</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-06</td>
+<td>商品カテゴリ／検索</td>
+<td>カテゴリから商品を探す。キーワード検索窓を併設</td>
+<td>カテゴリ大ボタン一覧（野菜・鮮魚 等）、検索窓（検索機能はリリース1.x仮置き）</td>
+<td>FR-04</td>
+<td>高（検索はリリース1.x）</td>
+</tr>
+<tr>
+<td>C-07</td>
+<td>商品一覧（カテゴリ別・検索結果）</td>
+<td>選択カテゴリ／検索条件に合致する商品の一覧</td>
+<td>商品カード一覧、並び替え（新着・締切が近い順 ※仮置き）、絞り込み</td>
+<td>FR-04, FR-03</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-08</td>
+<td>商品詳細</td>
+<td>商品の詳細情報と購入操作</td>
+<td>写真（複数）、価格、<strong>バッジ（NEW/人気 等）</strong>、<strong>在庫数</strong>、<strong>注文締切時間</strong>、<strong>温度帯（冷凍/冷蔵/常温）</strong>、説明文、出品者名、数量選択、「カートに入れる」、<strong>在庫切れ・締切超過時の購入不可表示</strong></td>
+<td>FR-05, FR-06</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-09</td>
+<td>カート</td>
+<td>注文予定商品の確認・数量変更</td>
+<td>商品ごとの数量変更・削除、小計、<strong>送料（内訳表示）</strong>、<strong>合計（商品代金＋送料）</strong>、<strong>締切超過・在庫減少/在庫切れ商品の警告表示</strong>、「注文へ進む」</td>
+<td>FR-06, FR-26</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-10</td>
+<td>注文確認・決済</td>
+<td>注文内容の最終確認とStripe決済</td>
+<td>注文内容、<strong>配送先（住所選択UI。直接受け渡しの有無〔要件書第10章#1〕により要否変動。C-16で管理）</strong>、<strong>送料（内訳表示）</strong>、合計金額、Stripe決済UI（カード登録・支払い）、「注文を確定する」、<strong>確定時の在庫不足エラー表示（同時注文競合時）</strong> ※決済確定タイミング（即時 or オーソリ→キャプチャ）は1.3(2)の確定に従う</td>
+<td>FR-06, FR-07, FR-26</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-11</td>
+<td>注文完了</td>
+<td>注文確定の完了表示</td>
+<td>注文番号、注文内容サマリー、「ホームへ戻る」「注文履歴を見る」</td>
+<td>FR-06</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-12</td>
+<td>注文履歴一覧</td>
+<td>過去の注文を一覧表示</td>
+<td>注文日・注文番号・金額・ステータス（受付/発送済 等 ※ステータス定義は仮置き）</td>
+<td>FR-08</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-13</td>
+<td>注文詳細</td>
+<td>個別注文の明細確認</td>
+<td>商品明細、金額内訳（税率別 ※軽減税率8%/10%）、送料、決済状況、発送状況、<strong>領収書/適格請求書の表示（要否・発行主体は1.2-4の確定に従う・仮置き）</strong>、再注文ボタン（推奨・リリース1.x）</td>
+<td>FR-08</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-14</td>
+<td>通知一覧</td>
+<td>受信したプッシュ通知・お知らせの一覧</td>
+<td>新着出品通知、締切前リマインド（仮置き）、運営お知らせ、既読管理</td>
+<td>FR-09, FR-22</td>
+<td>中（リリース1.x）</td>
+</tr>
+<tr>
+<td>C-15</td>
+<td>アカウント設定</td>
+<td>登録情報・通知設定の管理</td>
+<td>プロフィール編集、<strong>配送先住所管理（C-16へ。直接受け渡しの有無〔要件書第10章#1〕により要否変動）</strong>、決済カード管理（Stripe）、通知ON/OFF、<strong>利用規約・プライバシーポリシー参照（Z-03）</strong>、<strong>退会（Z-04）</strong>、ログアウト</td>
+<td>FR-23, FR-07, FR-24, FR-25</td>
+<td>高</td>
+</tr>
+<tr>
+<td>C-16</td>
+<td>配送先住所管理</td>
+<td>配送先住所の一覧・追加・編集（C-15配下に新設）</td>
+<td>住所一覧、新規追加、編集、既定住所の設定、削除。<strong>直接受け渡しの有無（要件書第10章#1）により要否変動</strong>。発注時（C-10）に選択</td>
+<td>F-109</td>
+<td>高</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="22">2.2 出品者向け（モバイルアプリ／ロール: 出品者）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>画面ID</th>
+<th>画面名</th>
+<th>概要</th>
+<th>主な表示要素・操作</th>
+<th>対応する機能要件</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-01</td>
+<td>ログイン</td>
+<td>出品者の認証（C-01/C-03と共通画面。ロールにより遷移先が変わる）</td>
+<td>メール（ID）・パスワード、ログインボタン</td>
+<td>FR-02</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-02</td>
+<td>出品ホーム（自分の出品一覧）</td>
+<td>自分が出品中の商品一覧と公開状態の管理</td>
+<td>出品商品カード（写真・価格・在庫・<strong>公開/非公開トグル</strong>）、大きな「出品する」ボタン、「いつもの商品から出品」ボタン</td>
+<td>FR-13, FR-10, FR-11</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-03</td>
+<td>リアルタイム出品</td>
+<td><strong>①写真を撮る→②金額（原価）を入れる→③出品ボタン</strong>の3操作最短フロー（1画面内ステップ遷移）</td>
+<td>①カメラ起動・撮影（撮り直し可）②金額＝<strong>原価（お渡し希望額）のテンキー入力＋マージン加算後の販売価格を自動プレビュー表示</strong>③「出品する」大ボタン。数量はデフォルト1（変更任意）、<strong>温度帯は冷凍/冷蔵/常温の3択大ボタン（テンプレート・前回値からのデフォルト適用で追加タップ原則ゼロ・変更任意）</strong>。AI生成・カテゴリ・説明文は任意ステップ（後から編集）</td>
+<td>FR-10</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-04</td>
+<td>出品完了</td>
+<td>出品成功のフィードバック</td>
+<td>「出品されました」表示、出品内容プレビュー、「続けて出品」「くわしく編集」導線</td>
+<td>FR-10</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-05</td>
+<td>定期商品管理（テンプレート一覧）</td>
+<td>定期的に出す商品のテンプレート一覧・管理</td>
+<td>テンプレートカード（写真・商品名・<strong>原価</strong>・<strong>温度帯</strong>）、「この商品を出品」ボタン、テンプレート新規作成・編集（<strong>温度帯／（送料方式が商品ごと固定の場合）送料欄を含む</strong>）</td>
+<td>FR-11</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-06</td>
+<td>テンプレート出品（数量入力）</td>
+<td>テンプレートを選び<strong>数量だけ入力して即出品</strong></td>
+<td>テンプレート内容表示、本日の数量テンキー入力、<strong>原価修正（任意）＋マージン加算後の販売価格の自動プレビュー表示</strong>、<strong>温度帯（テンプレート値をデフォルト適用・変更任意）</strong>、「出品する」</td>
+<td>FR-11</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-07</td>
+<td>商品編集</td>
+<td>出品済み商品・テンプレートの詳細編集</td>
+<td>写真差替、商品名、<strong>原価（販売価格は自動算出）</strong>、<strong>カテゴリ選択</strong>、<strong>温度帯（冷凍/冷蔵/常温）</strong>、<strong>バッジ選択（NEW/人気を基本。「朝どれ」等はバッジマスタで追加可能な拡張例。出品者への付与権限は要確認〔要件書4.2・第10章#15〕）</strong>、<strong>在庫数</strong>、<strong>（送料方式が商品ごと固定の場合）送料欄</strong>、タイトル・説明文＋<strong>「AIでタイトルと説明文を作る」ボタン</strong>、公開/非公開</td>
+<td>FR-12, FR-13</td>
+<td>高（AI生成はShould・リリース1.x繰延可）</td>
+</tr>
+<tr>
+<td>S-08</td>
+<td>受注一覧／発送管理</td>
+<td>自分の商品への注文一覧と発送状態の管理</td>
+<td>注文単位/商品単位の一覧（切替は仮置き）、注文者・数量・金額、発送済みチェック操作</td>
+<td>FR-14</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-09</td>
+<td>受注詳細</td>
+<td>個別受注の明細と発送・欠品対応</td>
+<td>注文明細、注文者情報・配送先（表示範囲は個人情報方針に合わせ要確認）、<strong>発送指示（宛先・品名・温度帯〔冷凍/冷蔵/常温〕を大きく明示）</strong>、「発送済みにする」大ボタン、<strong>「この注文をキャンセル申請する（欠品時）」操作と申請状態（申請中／承認済／却下）表示</strong> ※出荷確定＝決済キャプチャの契機とする場合は1.3(2)の確定に従う。欠品時の取消申請→管理者承認→返金/オーソリ取消の実行はA-11で行う</td>
+<td>FR-14, FR-27</td>
+<td>高</td>
+</tr>
+<tr>
+<td>S-10</td>
+<td>売上確認</td>
+<td>自分の売上の確認</td>
+<td>期間別（日/月）売上合計、<strong>原価×販売数量に基づく受取額（価格モデル＝F-007に従う）</strong>、商品別内訳（仮置き）、税率別内訳・支払通知書等の帳票（<strong>インボイス対応方針の確定後に仕様化</strong>）。※<strong>画面提供はリリース1.x（F-209）</strong>。フェーズ1は管理者からの共有で代替</td>
+<td>FR-15（＝F-209。受取額はマージン率F-207に依存）</td>
+<td>中（リリース1.x）</td>
+</tr>
+<tr>
+<td>S-11</td>
+<td>通知一覧</td>
+<td>受注通知・運営お知らせの確認</td>
+<td>新規受注通知、締切・運営からのお知らせ、既読管理</td>
+<td>FR-09, FR-22</td>
+<td>中（リリース1.x）</td>
+</tr>
+<tr>
+<td>S-12</td>
+<td>アカウント設定</td>
+<td>出品者情報・通知設定の管理</td>
+<td>プロフィール（屋号・産地等 ※項目は仮置き）、<strong>課税/免税区分・適格請求書発行事業者登録番号（インボイス対応・仮置き）</strong>、振込先情報（<strong>精算スキーム＝1.3(1)の確定後に要否確定</strong>）、通知ON/OFF、<strong>利用規約・プライバシーポリシー参照（Z-03）</strong>、<strong>退会（Z-04）</strong>、ログアウト</td>
+<td>FR-23, FR-24, FR-25</td>
+<td>高</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="23-web">2.3 管理者向け（Web管理画面）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>画面ID</th>
+<th>画面名</th>
+<th>概要</th>
+<th>主な表示要素・操作</th>
+<th>対応する機能要件</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A-01</td>
+<td>ログイン</td>
+<td>管理者認証</td>
+<td>メール・パスワード、（2段階認証は推奨・仮置き）</td>
+<td>FR-02</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-02</td>
+<td>ダッシュボード</td>
+<td>売上・注文状況のサマリー</td>
+<td>本日/今月の売上・注文件数、出品数、直近注文リスト、<strong>手数料収益（概算）</strong>、（グラフ・出品者別/商品別分析はリリース1.xで拡充） ※F-202のフェーズ1受入基準（本日/今月の売上・注文件数・出品数・直近注文・手数料収益〔概算〕の把握）と1対1で一致</td>
+<td>FR-16</td>
+<td>中（簡易版は高）</td>
+</tr>
+<tr>
+<td>A-03</td>
+<td>商品管理（全商品一覧）</td>
+<td>全出品者の商品を横断管理</td>
+<td>商品一覧（出品者・カテゴリ・価格・在庫・公開状態・バッジ）、検索・絞り込み、公開停止操作</td>
+<td>FR-17</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-04</td>
+<td>商品詳細・編集（バッジ付与）</td>
+<td>個別商品の内容確認・修正・バッジ付与</td>
+<td>商品情報編集、<strong>バッジ付与/解除（NEW/人気を基本、拡張例はバッジマスタで追加）</strong>、カテゴリ変更、公開/非公開</td>
+<td>FR-17, FR-12</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-05</td>
+<td>カテゴリ管理</td>
+<td>商品カテゴリの作成・編集・並び順管理</td>
+<td>カテゴリ一覧、追加・名称変更・表示順・無効化</td>
+<td>FR-17, FR-04</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-06</td>
+<td>バッジ管理</td>
+<td>バッジ（NEW/人気・拡張例）マスタの管理</td>
+<td>バッジ一覧、追加・名称/アイコン編集（付与ルールの自動化はリリース1.x仮置き）</td>
+<td>FR-17, FR-05</td>
+<td>中</td>
+</tr>
+<tr>
+<td>A-07</td>
+<td>ユーザー管理（一覧・権限）</td>
+<td>発注者・出品者・管理者アカウントの一覧管理</td>
+<td>ユーザー一覧（ロール・状態）、検索、権限変更、利用停止/再開、<strong>退会済みユーザーの状態表示（データ保持方針は4.3-9の確定に従う）</strong></td>
+<td>FR-18</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-08</td>
+<td>アカウント発行・招待QR発行</td>
+<td>新規ユーザーの招待発行</td>
+<td>ロール選択→招待コード発行、<strong>招待QRコード生成・ダウンロード/印刷</strong>、有効期限設定（仮置き）、発行履歴</td>
+<td>FR-18, FR-01</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-09</td>
+<td>手数料（マージン率）設定</td>
+<td>プラットフォーム手数料率の設定</td>
+<td>全体マージン率設定、（出品者別・カテゴリ別の個別率は要否未確定のため仮置きでリリース1.x）、改定履歴</td>
+<td>FR-19</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-10</td>
+<td>注文管理（一覧）</td>
+<td>全注文の横断管理</td>
+<td>注文一覧（日時・発注者・出品者・金額・決済状況・発送状況）、検索・絞り込み、<strong>税率区分・税額を含む取引明細CSV出力（F-208。経理/振込・インボイス実務の当面の受け皿・フェーズ1）</strong>、<strong>帳票出力（適格請求書・媒介者交付特例の要否は1.2-4の確定に従う）</strong></td>
+<td>FR-20</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-11</td>
+<td>注文詳細（管理者）</td>
+<td>個別注文の詳細確認・対応</td>
+<td>注文明細、Stripe決済情報参照、キャンセル/返金・オーソリ取消処理、<strong>出品者からの欠品時キャンセル申請（S-09）の承認→返金（キャプチャ後）/オーソリ取消（キャプチャ前）の実行（F-107）</strong> ※運用フローは決済確定タイミング＝1.3(2)の確定後に詳細化・要協議</td>
+<td>FR-20, FR-07, FR-27</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-12</td>
+<td>締切時間設定</td>
+<td>注文締切時間の設定</td>
+<td>締切時刻の設定（全体一律か、出品者別/商品別かは未確定のため<strong>全体一律を仮置き</strong>）、変更履歴</td>
+<td>FR-21, FR-03</td>
+<td>高</td>
+</tr>
+<tr>
+<td>A-13</td>
+<td>お知らせ／プッシュ通知配信管理</td>
+<td>利用者向けお知らせとプッシュ通知の作成・配信</td>
+<td><strong>フェーズ1（簡易版）: テキストのみの即時配信（C-05お知らせバナーの配信元）</strong>。リリース1.x: 配信先ロール指定・予約配信・配信履歴の拡充 ※新着出品・受注の自動通知はシステム側で自動送信（画面不要）</td>
+<td>FR-22, FR-09</td>
+<td>中（簡易版は高）</td>
+</tr>
+<tr>
+<td>A-14</td>
+<td>送料設定</td>
+<td>送料の方式・金額の設定（<strong>新設・フェーズ1簡易版</strong>）</td>
+<td>送料方式（<strong>商品ごと固定／サイズ×地域テーブル</strong>は要件書第10章#1の確定に従う）、金額設定、配送不可地域・離島の扱い（仮置き）、改定履歴。<strong>送料方式が「商品ごと固定」の場合はS-07・テンプレート（S-05/S-06）に送料欄を設ける</strong>（S-07注記参照）</td>
+<td>FR-26</td>
+<td>高（簡易版）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="24">2.4 共通画面（全ロール）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>画面ID</th>
+<th>画面名</th>
+<th>概要</th>
+<th>対応する機能要件</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Z-01</td>
+<td>エラー／通信オフライン表示</td>
+<td>通信エラー・障害時の案内（圏外の多い地域での利用を想定）。表示要素に<strong>「電話で聞く」ボタン（tel:発信）</strong>、<strong>オフライン時の「あとで自動送信」待ち表示</strong>（画像のローカルキュー・自動再送状況）を含む。エラー時サポート導線・オフライン出品継続（F-115）に対応</td>
+<td>F-115</td>
+<td>高</td>
+</tr>
+<tr>
+<td>Z-02</td>
+<td>強制アップデート案内</td>
+<td>旧バージョン利用時の更新誘導（運用上の推奨画面）</td>
+<td>非機能（推奨）</td>
+<td>中</td>
+</tr>
+<tr>
+<td>Z-03</td>
+<td>利用規約・プライバシーポリシー表示／同意</td>
+<td>登録時（C-02）の同意取得と、設定画面（C-15/S-12）からの常時参照。特定商取引法に基づく表記の掲載も本画面に併載（発注者属性の確定後に要否判定）</td>
+<td>FR-25</td>
+<td>高</td>
+</tr>
+<tr>
+<td>Z-04</td>
+<td>退会（アカウント削除）</td>
+<td><strong>App Store Guideline 5.1.1(v) 対応の必須画面</strong>。C-15/S-12から遷移。注意事項表示（未発送注文・未精算売上がある場合の制御）、確認ダイアログ、削除実行 ※未発送注文・未精算売上・Stripe顧客データの扱いは4.3-9で確定</td>
+<td>FR-24</td>
+<td>高</td>
+</tr>
+<tr>
+<td>Z-05</td>
+<td>プッシュ通知許諾の事前説明（プレパーミッション）</td>
+<td>OSの通知許諾ダイアログ表示前に価値を説明する画面（例:「新しい商品が出たらすぐお知らせします」）。登録完了後（C-02→本画面→C-05）に表示。新着出品通知は本サービスの中核価値であり、許諾取得率が事業KPIに直結するためフェーズ1必須</td>
+<td>F-114</td>
+<td>高</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="3">3. 画面遷移図</h2>
+<h3 id="31">3.1 発注者（モバイルアプリ）</h3>
+<figure class="diagram"><figcaption><span class="dg-kick">画面遷移図 1</span><span class="dg-title">発注者アプリ</span><span class="dg-sub">スプラッシュ → 会員登録 → 発注 → 決済 → 履歴</span></figcaption><div class="dg-scroll"><svg width="1658" height="978" id="mm0"  xmlns="http://www.w3.org/2000/svg"  viewBox="-8 -8 1658.30859375 977.8150024414062" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mm0{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;fill:#1c2b3a;}#mm0 .error-icon{fill:#f6f8fb;}#mm0 .error-text{fill:#090704;stroke:#090704;}#mm0 .edge-thickness-normal{stroke-width:2px;}#mm0 .edge-thickness-thick{stroke-width:3.5px;}#mm0 .edge-pattern-solid{stroke-dasharray:0;}#mm0 .edge-pattern-dashed{stroke-dasharray:3;}#mm0 .edge-pattern-dotted{stroke-dasharray:2;}#mm0 .marker{fill:#7d94ad;stroke:#7d94ad;}#mm0 .marker.cross{stroke:#7d94ad;}#mm0 svg{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;}#mm0 .label{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;color:#1c2b3a;}#mm0 .cluster-label text{fill:#090704;}#mm0 .cluster-label span,#mm0 p{color:#090704;}#mm0 .label text,#mm0 span,#mm0 p{fill:#1c2b3a;color:#1c2b3a;}#mm0 .node rect,#mm0 .node circle,#mm0 .node ellipse,#mm0 .node polygon,#mm0 .node path{fill:#eef2f7;stroke:#5b7fa6;stroke-width:1px;}#mm0 .flowchart-label text{text-anchor:middle;}#mm0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mm0 .node .label{text-align:center;}#mm0 .node.clickable{cursor:pointer;}#mm0 .arrowheadPath{fill:#0b0b0b;}#mm0 .edgePath .path{stroke:#7d94ad;stroke-width:2.0px;}#mm0 .flowchart-link{stroke:#7d94ad;fill:none;}#mm0 .edgeLabel{background-color:hsl(93.3333333333, 36%, 95.0980392157%);text-align:center;}#mm0 .edgeLabel rect{opacity:0.5;background-color:hsl(93.3333333333, 36%, 95.0980392157%);fill:hsl(93.3333333333, 36%, 95.0980392157%);}#mm0 .labelBkg{background-color:rgba(242, 247, 238, 0.5);}#mm0 .cluster rect{fill:#f3f6fa;stroke:#c2d0df;stroke-width:1px;}#mm0 .cluster text{fill:#090704;}#mm0 .cluster span,#mm0 p{color:#090704;}#mm0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:12px;background:#f6f8fb;border:1px solid hsl(216, 0%, 87.4509803922%);border-radius:2px;pointer-events:none;z-index:100;}#mm0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c2b3a;}#mm0 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mm0_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm0_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm0_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm0_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm0_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="mm0_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"><g class="cluster default flowchart-label" id="TAB"><rect style="" rx="0" ry="0" x="578.03125" y="192.5900001525879" width="660.49609375" height="688.2250003814697"/><g class="cluster-label" transform="translate(908.279296875, 192.5900001525879)"><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">下部タブ（常時表示・浅い階層）※フェーズ1は4枠、C-14はリリース1.xで追加</tspan></text></g></g></g><g class="edgePaths"><path d="M1477.529,23.295L1458.568,29.403C1439.607,35.511,1401.684,47.727,1382.723,59.059C1363.762,70.392,1363.762,80.841,1363.762,86.065L1363.762,91.29" id="L-C01-C02-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C01 LE-C02" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1524.244,23.295L1529.779,29.403C1535.315,35.511,1546.386,47.727,1551.921,63.109C1557.457,78.492,1557.457,97.041,1557.457,114.315C1557.457,131.59,1557.457,147.59,1557.457,160.423C1557.457,173.257,1557.457,182.923,1557.457,191.731C1557.457,200.539,1557.457,208.488,1557.457,212.463L1557.457,216.438" id="L-C01-C03-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C01 LE-C03" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1557.457,244.908L1557.457,251.054C1557.457,257.201,1557.457,269.494,1557.457,280.88C1557.457,292.265,1557.457,302.743,1557.457,307.981L1557.457,313.22" id="L-C03-C04-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C03 LE-C04" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1363.762,134.59L1363.762,139.423C1363.762,144.257,1363.762,153.923,1363.762,163.59C1363.762,173.257,1363.762,182.923,1363.762,191.745C1363.762,200.568,1363.762,208.545,1363.762,212.534L1363.762,216.523" id="L-C02-Z05-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C02 LE-Z05" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1272.527,240.763L1188.686,247.6C1104.844,254.438,937.16,268.113,858.942,280.454C780.723,292.796,791.97,303.804,797.594,309.309L803.217,314.813" id="L-Z05-C05-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-Z05 LE-C05" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1502.996,238.221L1422.27,245.482C1341.544,252.743,1180.092,267.265,1074.854,280.441C969.615,293.617,920.59,305.447,896.077,311.362L871.565,317.277" id="L-C03-C05-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C03 LE-C05" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M794.433,341.52L781.568,347.603C768.703,353.687,742.973,365.853,651.102,379.032C559.231,392.211,401.22,406.402,322.214,413.498L243.208,420.594" id="L-C05-C08-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C05 LE-C08" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M685.82,245.055L685.82,251.177C685.82,257.299,685.82,269.543,637.471,282.319C589.123,295.095,492.425,308.402,444.076,315.056L395.727,321.709" id="L-C06-C07-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C06 LE-C07" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M335.336,341.52L335.336,347.603C335.336,353.687,335.336,365.853,316.845,377.755C298.355,389.656,261.374,401.293,242.883,407.111L224.392,412.929" id="L-C07-C08-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C07 LE-C08" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M182.789,437.52L182.789,443.603C182.789,449.687,182.789,461.853,182.789,473.137C182.789,484.42,182.789,494.82,182.789,500.02L182.789,505.22" id="L-C08-C09-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C08 LE-C09" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M182.789,533.52L182.789,539.603C182.789,545.687,182.789,557.853,182.789,569.137C182.789,580.42,182.789,590.82,182.789,596.02L182.789,601.22" id="L-C09-C10-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C09 LE-C10" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M164.666,644.52L158.84,650.628C153.015,656.736,141.363,668.952,151.745,682.067C162.127,695.182,194.542,709.197,210.75,716.204L226.958,723.212" id="L-C10-C11-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C10 LE-C11" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M313.563,732.127L413.457,723.634C513.352,715.14,713.141,698.154,813.035,680.386C912.93,662.618,912.93,644.069,912.93,625.545C912.93,607.02,912.93,588.52,912.93,571.27C912.93,554.02,912.93,538.02,912.93,522.02C912.93,506.02,912.93,490.02,912.93,474.02C912.93,458.02,912.93,442.02,912.93,426.02C912.93,410.02,912.93,394.02,901.781,380.338C890.633,366.656,868.336,355.291,857.187,349.609L846.039,343.927" id="L-C11-C05-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C11 LE-C05" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M313.563,741.71L408.576,750.144C503.589,758.578,693.615,775.447,788.628,789.081C883.641,802.715,883.641,813.115,883.641,818.315L883.641,823.515" id="L-C11-C12-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C11 LE-C12" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M883.641,851.815L883.641,856.648C883.641,861.482,883.641,871.148,883.641,880.815C883.641,890.482,883.641,900.148,883.641,908.932C883.641,917.715,883.641,925.615,883.641,929.565L883.641,933.515" id="L-C12-C13-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C12 LE-C13" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M1094.082,341.52L1094.082,347.603C1094.082,353.687,1094.082,365.853,952.272,379.406C810.462,392.959,526.842,407.898,385.032,415.367L243.222,422.837" id="L-C14-C08-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-C14 LE-C08" style="fill:none;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M770.48,637.02L755.472,644.378C740.463,651.736,710.447,666.452,608.793,681.808C507.139,697.165,333.849,713.163,247.204,721.161L160.559,729.16" id="L-C15-C16-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C15 LE-C16" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M200.912,644.52L206.738,650.628C212.564,656.736,224.215,668.952,213.508,680.874C202.8,692.797,169.732,704.427,153.198,710.242L136.665,716.057" id="L-C10-C16-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C10 LE-C16" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M793.213,637.02L792.749,644.378C792.285,651.736,791.357,666.452,747.208,681.01C703.059,695.568,615.688,709.968,572.002,717.168L528.317,724.368" id="L-C15-Z03-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C15 LE-Z03" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/><path d="M811.295,637.02L822.401,644.378C833.507,651.736,855.718,666.452,932.17,681.07C1008.622,695.688,1139.314,710.209,1204.66,717.469L1270.006,724.73" id="L-C15-Z04-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-C15 LE-Z04" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm0_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(1363.76171875, 59.94250011444092)"><g class="label" transform="translate(-97.7421875, -7.647500038146973)"><rect rx="0" ry="0" width="195.484375" height="15.295000076293945"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">招待QR読み取り/コード入力</tspan></text></g></g><g class="edgeLabel" transform="translate(1557.45703125, 115.59000015258789)"><g class="label" transform="translate(-30, -7.5)"><rect rx="0" ry="0" width="60" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">登録済み</tspan></text></g></g><g class="edgeLabel" transform="translate(1557.45703125, 281.7875003814697)"><g class="label" transform="translate(-67.203125, -7.5)"><rect rx="0" ry="0" width="134.40625" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">パスワードを忘れた</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(717.2421875, 378.0200004577637)"><g class="label" transform="translate(-66.9765625, -7.5)"><rect rx="0" ry="0" width="133.953125" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">商品カードをタップ</tspan></text></g></g><g class="edgeLabel" transform="translate(685.8203125, 281.7875003814697)"><g class="label" transform="translate(-63.65625, -7.732500076293945)"><rect rx="0" ry="0" width="127.3125" height="15.46500015258789"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">カテゴリ選択/検索</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(182.7890625, 474.0200004577637)"><g class="label" transform="translate(-52.5, -7.5)"><rect rx="0" ry="0" width="105" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">カートに入れる</tspan></text></g></g><g class="edgeLabel" transform="translate(182.7890625, 570.0200004577637)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">注文へ進む</tspan></text></g></g><g class="edgeLabel" transform="translate(129.7109375, 681.1675004959106)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">注文を確定</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(883.640625, 792.3150005340576)"><g class="label" transform="translate(-52.5, -7.5)"><rect rx="0" ry="0" width="105" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">注文履歴を見る</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(1094.08203125, 378.0200004577637)"><g class="label" transform="translate(-66.9765625, -7.5)"><rect rx="0" ry="0" width="133.953125" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">新着出品通知タップ</tspan></text></g></g><g class="edgeLabel" transform="translate(680.4296875, 681.1675004959106)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">配送先住所</tspan></text></g></g><g class="edgeLabel" transform="translate(235.8671875, 681.1675004959106)"><g class="label" transform="translate(-48.65625, -7.647500038146973)"><rect rx="0" ry="0" width="97.3125" height="15.295000076293945"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">住所選択/追加</tspan></text></g></g><g class="edgeLabel" transform="translate(790.4296875, 681.1675004959106)"><g class="label" transform="translate(-52.5, -7.585000038146973)"><rect rx="0" ry="0" width="105" height="15.170000076293945"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">規約・ポリシー</tspan></text></g></g><g class="edgeLabel" transform="translate(877.9296875, 681.1675004959106)"><g class="label" transform="translate(-15, -7.5)"><rect rx="0" ry="0" width="30" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">退会</tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-C05-9" data-node="true" data-id="C05" transform="translate(818.75390625, 330.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-116.8828125" y="-11.5" width="233.765625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-05 ホーム 本日の商品フィード</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C06-13" data-node="true" data-id="C06" transform="translate(685.8203125, 233.32250022888184)"><rect class="basic label-container" style="" rx="0" ry="0" x="-73.7890625" y="-11.732500076293945" width="147.578125" height="23.46500015258789"/><g class="label" style="" transform="translate(0, -7.732500076293945)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-06 カテゴリ/検索</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C12-14" data-node="true" data-id="C12" transform="translate(883.640625, 840.3150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.140625" y="-11.5" width="140.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-12 注文履歴一覧</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C14-15" data-node="true" data-id="C14" transform="translate(1094.08203125, 330.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-110.4453125" y="-11.5" width="220.890625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-14 通知一覧（リリース1.x）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C15-16" data-node="true" data-id="C15" transform="translate(793.9375, 625.5200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-77.640625" y="-11.5" width="155.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-15 アカウント設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C01-0" data-node="true" data-id="C01" transform="translate(1513.6875, 11.647500038146973)"><rect class="basic label-container" style="" rx="0" ry="0" x="-103.7890625" y="-11.647500038146973" width="207.578125" height="23.295000076293945"/><g class="label" style="" transform="translate(0, -7.647500038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-01 スプラッシュ/初回起動</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C02-1" data-node="true" data-id="C02" transform="translate(1363.76171875, 115.59000015258789)"><rect class="basic label-container" style="" rx="0" ry="0" x="-128.734375" y="-19" width="257.46875" height="38"/><g class="label" style="" transform="translate(0, -15)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-02 会員登録</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（Z-03 規約・ポリシー同意を含む）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C03-3" data-node="true" data-id="C03" transform="translate(1557.45703125, 233.32250022888184)"><rect class="basic label-container" style="" rx="0" ry="0" x="-54.4609375" y="-11.585000038146973" width="108.921875" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-03 ログイン</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C04-5" data-node="true" data-id="C04" transform="translate(1557.45703125, 330.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-84.8515625" y="-11.5" width="169.703125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-04 パスワード再設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-Z05-7" data-node="true" data-id="Z05" transform="translate(1363.76171875, 233.32250022888184)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.234375" y="-11.5" width="182.46875" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Z-05 通知許諾の事前説明</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C08-18" data-node="true" data-id="C08" transform="translate(182.7890625, 426.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.140625" y="-11.5" width="110.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-08 商品詳細</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C07-20" data-node="true" data-id="C07" transform="translate(335.3359375, 330.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.140625" y="-11.5" width="110.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-07 商品一覧</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C09-24" data-node="true" data-id="C09" transform="translate(182.7890625, 522.0200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-92.640625" y="-11.5" width="185.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-09 カート（送料表示）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C10-26" data-node="true" data-id="C10" transform="translate(182.7890625, 625.5200004577637)"><rect class="basic label-container" style="" rx="0" ry="0" x="-103" y="-19" width="206" height="38"/><g class="label" style="" transform="translate(0, -15)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-10 注文確認・決済 Stripe</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（配送先選択・送料）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C11-28" data-node="true" data-id="C11" transform="translate(258.421875, 736.8150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.140625" y="-11.5" width="110.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-11 注文完了</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C13-34" data-node="true" data-id="C13" transform="translate(883.640625, 950.3150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.140625" y="-11.5" width="110.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-13 注文詳細</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-C16-38" data-node="true" data-id="C16" transform="translate(77.640625, 736.8150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-77.640625" y="-19" width="155.28125" height="38"/><g class="label" style="" transform="translate(0, -15)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-16 配送先住所管理</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">一覧・追加・編集</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-Z03-42" data-node="true" data-id="Z03" transform="translate(452.796875, 736.8150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.234375" y="-11.585000038146973" width="182.46875" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Z-03 規約・ポリシー表示</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-Z04-44" data-node="true" data-id="Z04" transform="translate(1378.77734375, 736.8150005340576)"><rect class="basic label-container" style="" rx="0" ry="0" x="-106.25" y="-11.5" width="212.5" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Z-04 退会（アカウント削除）</tspan></text></g></g></g></g></g></svg></div></figure>
+<h3 id="32">3.2 出品者（モバイルアプリ）</h3>
+<figure class="diagram"><figcaption><span class="dg-kick">画面遷移図 2</span><span class="dg-title">出品者アプリ</span><span class="dg-sub">ログイン → リアルタイム出品 / 定期出品 → 受注・発送</span></figcaption><div class="dg-scroll"><svg width="2039" height="689" id="mm1"  xmlns="http://www.w3.org/2000/svg"  viewBox="-8 -8 2039.34765625 689.0999755859375" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mm1{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;fill:#1c2b3a;}#mm1 .error-icon{fill:#f6f8fb;}#mm1 .error-text{fill:#090704;stroke:#090704;}#mm1 .edge-thickness-normal{stroke-width:2px;}#mm1 .edge-thickness-thick{stroke-width:3.5px;}#mm1 .edge-pattern-solid{stroke-dasharray:0;}#mm1 .edge-pattern-dashed{stroke-dasharray:3;}#mm1 .edge-pattern-dotted{stroke-dasharray:2;}#mm1 .marker{fill:#7d94ad;stroke:#7d94ad;}#mm1 .marker.cross{stroke:#7d94ad;}#mm1 svg{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;}#mm1 .label{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;color:#1c2b3a;}#mm1 .cluster-label text{fill:#090704;}#mm1 .cluster-label span,#mm1 p{color:#090704;}#mm1 .label text,#mm1 span,#mm1 p{fill:#1c2b3a;color:#1c2b3a;}#mm1 .node rect,#mm1 .node circle,#mm1 .node ellipse,#mm1 .node polygon,#mm1 .node path{fill:#eef2f7;stroke:#5b7fa6;stroke-width:1px;}#mm1 .flowchart-label text{text-anchor:middle;}#mm1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mm1 .node .label{text-align:center;}#mm1 .node.clickable{cursor:pointer;}#mm1 .arrowheadPath{fill:#0b0b0b;}#mm1 .edgePath .path{stroke:#7d94ad;stroke-width:2.0px;}#mm1 .flowchart-link{stroke:#7d94ad;fill:none;}#mm1 .edgeLabel{background-color:hsl(93.3333333333, 36%, 95.0980392157%);text-align:center;}#mm1 .edgeLabel rect{opacity:0.5;background-color:hsl(93.3333333333, 36%, 95.0980392157%);fill:hsl(93.3333333333, 36%, 95.0980392157%);}#mm1 .labelBkg{background-color:rgba(242, 247, 238, 0.5);}#mm1 .cluster rect{fill:#f3f6fa;stroke:#c2d0df;stroke-width:1px;}#mm1 .cluster text{fill:#090704;}#mm1 .cluster span,#mm1 p{color:#090704;}#mm1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:12px;background:#f6f8fb;border:1px solid hsl(216, 0%, 87.4509803922%);border-radius:2px;pointer-events:none;z-index:100;}#mm1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c2b3a;}#mm1 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mm1_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm1_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm1_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm1_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm1_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="mm1_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"><g class="cluster default flowchart-label" id="STAB"><rect style="" rx="0" ry="0" x="131.015625" y="162.17000007629395" width="1851.5859375" height="81.29500007629395"/><g class="cluster-label" transform="translate(1056.80859375, 162.17000007629395)"><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">下部タブ（常時表示）※フェーズ1は3枠、S-10はリリース1.xで追加</tspan></text></g></g></g><g class="edgePaths"><path d="M819.801,23L819.801,27.833C819.801,32.667,819.801,42.333,819.801,51.117C819.801,59.9,819.801,67.8,819.801,71.75L819.801,75.7" id="L-S00-S01-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S00 LE-S01" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M819.801,104.17L819.801,109.003C819.801,113.837,819.801,123.503,819.801,133.17C819.801,142.837,819.801,152.503,819.801,161.287C819.801,170.07,819.801,177.97,819.801,181.92L819.801,185.87" id="L-S01-S02-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S01 LE-S02" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M692.02,210.933L606.644,216.355C521.268,221.777,350.517,232.621,265.141,244.14C179.766,255.66,179.766,267.855,179.766,281.981C179.766,296.107,179.766,312.163,179.766,328.206C179.766,344.248,179.766,360.277,179.766,373.491C179.766,386.705,179.766,397.105,179.766,402.305L179.766,407.505" id="L-S02-S03-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S02 LE-S03" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M167.672,465.805L164.896,471.888C162.12,477.972,156.568,490.138,189.718,502.486C222.868,514.833,294.72,527.36,330.646,533.624L366.572,539.888" id="L-S03-S04-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S03 LE-S04" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M403.457,538.805L391.364,532.722C379.272,526.638,355.087,514.472,329.216,502.645C303.345,490.818,275.788,479.331,262.01,473.588L248.231,467.844" id="L-S04-S03-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S04 LE-S03" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M426.316,561.805L426.316,567.888C426.316,573.972,426.316,586.138,449.308,598.087C472.3,610.035,518.284,621.765,541.276,627.63L564.268,633.495" id="L-S04-S07-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S04 LE-S07" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M480.84,547.287L616.298,539.79C751.757,532.293,1022.673,517.299,1158.132,499.302C1293.59,481.305,1293.59,460.305,1293.59,439.305C1293.59,418.305,1293.59,397.305,1293.59,378.791C1293.59,360.277,1293.59,344.248,1293.59,328.206C1293.59,312.163,1293.59,296.107,1293.59,281.981C1293.59,267.855,1293.59,255.66,1236.802,244.691C1180.014,233.721,1066.438,223.977,1009.651,219.105L952.863,214.233" id="L-S04-S02-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S04 LE-S02" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M754.433,214.465L727.307,219.298C700.182,224.132,645.931,233.798,618.805,244.729C591.68,255.66,591.68,267.855,591.68,279.181C591.68,290.507,591.68,300.963,591.68,306.192L591.68,311.42" id="L-S02-S05-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S02 LE-S05" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M579.21,339.72L572.598,345.818C565.986,351.915,552.763,364.11,546.151,377.908C539.539,391.705,539.539,407.105,539.539,414.805L539.539,422.505" id="L-S05-S06-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S05 LE-S06" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M539.539,450.805L539.539,459.388C539.539,467.972,539.539,485.138,526.003,499.46C512.467,513.782,485.395,525.259,471.858,530.998L458.322,536.736" id="L-S06-S04-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S06 LE-S04" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M618.912,339.72L633.351,345.818C647.79,351.915,676.669,364.11,691.108,380.708C705.547,397.305,705.547,418.305,705.547,439.305C705.547,460.305,705.547,481.305,705.547,499.805C705.547,518.305,705.547,534.305,705.547,550.305C705.547,566.305,705.547,582.305,699.522,595.793C693.498,609.282,681.449,620.259,675.425,625.747L669.4,631.236" id="L-S05-S07-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-S05 LE-S07" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M819.801,214.465L819.801,219.298C819.801,224.132,819.801,233.798,819.801,244.729C819.801,255.66,819.801,267.855,819.801,281.981C819.801,296.107,819.801,312.163,819.801,328.206C819.801,344.248,819.801,360.277,819.801,378.791C819.801,397.305,819.801,418.305,819.801,439.305C819.801,460.305,819.801,481.305,819.801,499.805C819.801,518.305,819.801,534.305,819.801,550.305C819.801,566.305,819.801,582.305,801.475,596.121C783.15,609.937,746.498,621.569,728.173,627.386L709.847,633.202" id="L-S02-S07-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S02 LE-S07" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M1356.594,214.465L1356.594,219.298C1356.594,224.132,1356.594,233.798,1356.594,244.729C1356.594,255.66,1356.594,267.855,1356.594,281.981C1356.594,296.107,1356.594,312.163,1356.594,328.206C1356.594,344.248,1356.594,360.277,1319.734,376.654C1282.875,393.032,1209.155,409.758,1172.296,418.121L1135.436,426.485" id="L-S08-S09-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-S08 LE-S09" style="fill:none;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M1078.934,339.72L1078.934,345.818C1078.934,351.915,1078.934,364.11,1078.934,377.883C1078.934,391.656,1078.934,407.007,1078.934,414.682L1078.934,422.358" id="L-S11-S09-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-S11 LE-S09" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M894.055,214.465L924.868,219.298C955.681,224.132,1017.307,233.798,1048.12,244.729C1078.934,255.66,1078.934,267.855,1078.934,279.181C1078.934,290.507,1078.934,300.963,1078.934,306.192L1078.934,311.42" id="L-S02-S11-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-S02 LE-S11" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M1774.899,214.318L1748.514,219.175C1722.129,224.033,1669.36,233.749,1642.975,244.705C1616.59,255.66,1616.59,267.855,1616.59,279.167C1616.59,290.478,1616.59,300.907,1616.59,306.121L1616.59,311.335" id="L-S12-Z03-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-S12 LE-Z03" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm1_flowchart-pointEnd)"/><path d="M1859.919,214.318L1869.449,219.175C1878.979,224.033,1898.038,233.749,1907.568,244.705C1917.098,255.66,1917.098,267.855,1917.098,279.181C1917.098,290.507,1917.098,300.963,1917.098,306.192L1917.098,311.42" id="L-S12-Z04-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-S12 LE-Z04" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm1_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(179.765625, 328.2200002670288)"><g class="label" transform="translate(-75, -7.585000038146973)"><rect rx="0" ry="0" width="150" height="15.170000076293945"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">出品する（大ボタン）</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(330.90234375, 502.3050003051758)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">続けて出品</tspan></text></g></g><g class="edgeLabel" transform="translate(426.31640625, 598.3050003051758)"><g class="label" transform="translate(-44.703125, -7.5)"><rect rx="0" ry="0" width="89.40625" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">くわしく編集</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(591.6796875, 280.05000019073486)"><g class="label" transform="translate(-75, -7.5)"><rect rx="0" ry="0" width="150" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">いつもの商品から出品</tspan></text></g></g><g class="edgeLabel" transform="translate(539.5390625, 376.3050003051758)"><g class="label" transform="translate(-52.5, -7.5)"><rect rx="0" ry="0" width="105" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">この商品を出品</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(705.546875, 502.3050003051758)"><g class="label" transform="translate(-60, -7.5)"><rect rx="0" ry="0" width="120" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">テンプレート編集</tspan></text></g></g><g class="edgeLabel" transform="translate(819.80078125, 439.3050003051758)"><g class="label" transform="translate(-44.4765625, -7.5)"><rect rx="0" ry="0" width="88.953125" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">商品をタップ</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(1078.93359375, 376.3050003051758)"><g class="label" transform="translate(-51.9765625, -7.5)"><rect rx="0" ry="0" width="103.953125" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">受注通知タップ</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(1616.58984375, 280.05000019073486)"><g class="label" transform="translate(-52.5, -7.585000038146973)"><rect rx="0" ry="0" width="105" height="15.170000076293945"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">規約・ポリシー</tspan></text></g></g><g class="edgeLabel" transform="translate(1917.09765625, 280.05000019073486)"><g class="label" transform="translate(-15, -7.5)"><rect rx="0" ry="0" width="30" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">退会</tspan></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-S02-49" data-node="true" data-id="S02" transform="translate(819.80078125, 202.81750011444092)"><rect class="basic label-container" style="" rx="0" ry="0" x="-127.78125" y="-11.647500038146973" width="255.5625" height="23.295000076293945"/><g class="label" style="" transform="translate(0, -7.647500038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-02 出品ホーム 出品一覧/公開切替</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S08-51" data-node="true" data-id="S08" transform="translate(1356.59375, 202.81750011444092)"><rect class="basic label-container" style="" rx="0" ry="0" x="-88.1640625" y="-11.647500038146973" width="176.328125" height="23.295000076293945"/><g class="label" style="" transform="translate(0, -7.647500038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-08 受注一覧/発送管理</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S10-52" data-node="true" data-id="S10" transform="translate(1602.5546875, 202.81750011444092)"><rect class="basic label-container" style="" rx="0" ry="0" x="-109.796875" y="-11.5" width="219.59375" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-10 売上確認（リリース1.x）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S12-53" data-node="true" data-id="S12" transform="translate(1837.359375, 202.81750011444092)"><rect class="basic label-container" style="" rx="0" ry="0" x="-77.0078125" y="-11.5" width="154.015625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-12 アカウント設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S00-46" data-node="true" data-id="S00" transform="translate(819.80078125, 11.5)"><rect class="basic label-container" style="" rx="0" ry="0" x="-100.140625" y="-11.5" width="200.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">C-01 スプラッシュ（共通）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S01-47" data-node="true" data-id="S01" transform="translate(819.80078125, 92.58500003814697)"><rect class="basic label-container" style="" rx="0" ry="0" x="-128.609375" y="-11.585000038146973" width="257.21875" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-01 ログイン（共通・ロール判定）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S03-55" data-node="true" data-id="S03" transform="translate(179.765625, 439.3050003051758)"><rect class="basic label-container" style="" rx="0" ry="0" x="-179.765625" y="-26.5" width="359.53125" height="53"/><g class="label" style="" transform="translate(0, -22.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-03 リアルタイム出品</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">1.写真を撮る 2.金額（原価）を入れる 3.出品ボタン</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（温度帯はデフォルト適用）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S04-57" data-node="true" data-id="S04" transform="translate(426.31640625, 550.3050003051758)"><rect class="basic label-container" style="" rx="0" ry="0" x="-54.5234375" y="-11.5" width="109.046875" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-04 出品完了</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S07-61" data-node="true" data-id="S07" transform="translate(644.46484375, 653.9524993896484)"><rect class="basic label-container" style="" rx="0" ry="0" x="-194.515625" y="-19.147499084472656" width="389.03125" height="38.29499816894531"/><g class="label" style="" transform="translate(0, -15.147499084472656)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-07 商品編集</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">カテゴリ/温度帯/バッジ/在庫/送料/AIタイトル・説明文</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S05-65" data-node="true" data-id="S05" transform="translate(591.6796875, 328.2200002670288)"><rect class="basic label-container" style="" rx="0" ry="0" x="-114.5078125" y="-11.5" width="229.015625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-05 定期商品テンプレート一覧</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S06-67" data-node="true" data-id="S06" transform="translate(539.5390625, 439.3050003051758)"><rect class="basic label-container" style="" rx="0" ry="0" x="-132.0078125" y="-11.5" width="264.015625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-06 テンプレート出品 数量のみ入力</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S09-75" data-node="true" data-id="S09" transform="translate(1078.93359375, 439.3050003051758)"><rect class="basic label-container" style="" rx="0" ry="0" x="-180.65625" y="-11.647500038146973" width="361.3125" height="23.295000076293945"/><g class="label" style="" transform="translate(0, -7.647500038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-09 受注詳細 発送済みにする/欠品キャンセル申請</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-S11-76" data-node="true" data-id="S11" transform="translate(1078.93359375, 328.2200002670288)"><rect class="basic label-container" style="" rx="0" ry="0" x="-109.796875" y="-11.5" width="219.59375" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">S-11 通知一覧（リリース1.x）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-Z03-81" data-node="true" data-id="Z03" transform="translate(1616.58984375, 328.2200002670288)"><rect class="basic label-container" style="" rx="0" ry="0" x="-91.234375" y="-11.585000038146973" width="182.46875" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Z-03 規約・ポリシー表示</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-Z04-83" data-node="true" data-id="Z04" transform="translate(1917.09765625, 328.2200002670288)"><rect class="basic label-container" style="" rx="0" ry="0" x="-106.25" y="-11.5" width="212.5" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">Z-04 退会（アカウント削除）</tspan></text></g></g></g></g></g></svg></div></figure>
+<h3 id="33-web">3.3 管理者（Web管理画面）</h3>
+<figure class="diagram"><figcaption><span class="dg-kick">画面遷移図 3</span><span class="dg-title">管理者（Web管理画面）</span><span class="dg-sub">ダッシュボード → 商品・ユーザー・注文・手数料の管理</span></figcaption><div class="dg-scroll"><svg width="2116" height="415" id="mm2"  xmlns="http://www.w3.org/2000/svg"  viewBox="-8 -8 2115.90625 415.3399963378906" role="graphics-document document" aria-roledescription="flowchart-v2"><style>#mm2{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;fill:#1c2b3a;}#mm2 .error-icon{fill:#f6f8fb;}#mm2 .error-text{fill:#090704;stroke:#090704;}#mm2 .edge-thickness-normal{stroke-width:2px;}#mm2 .edge-thickness-thick{stroke-width:3.5px;}#mm2 .edge-pattern-solid{stroke-dasharray:0;}#mm2 .edge-pattern-dashed{stroke-dasharray:3;}#mm2 .edge-pattern-dotted{stroke-dasharray:2;}#mm2 .marker{fill:#7d94ad;stroke:#7d94ad;}#mm2 .marker.cross{stroke:#7d94ad;}#mm2 svg{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:15px;}#mm2 .label{font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;color:#1c2b3a;}#mm2 .cluster-label text{fill:#090704;}#mm2 .cluster-label span,#mm2 p{color:#090704;}#mm2 .label text,#mm2 span,#mm2 p{fill:#1c2b3a;color:#1c2b3a;}#mm2 .node rect,#mm2 .node circle,#mm2 .node ellipse,#mm2 .node polygon,#mm2 .node path{fill:#eef2f7;stroke:#5b7fa6;stroke-width:1px;}#mm2 .flowchart-label text{text-anchor:middle;}#mm2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#mm2 .node .label{text-align:center;}#mm2 .node.clickable{cursor:pointer;}#mm2 .arrowheadPath{fill:#0b0b0b;}#mm2 .edgePath .path{stroke:#7d94ad;stroke-width:2.0px;}#mm2 .flowchart-link{stroke:#7d94ad;fill:none;}#mm2 .edgeLabel{background-color:hsl(93.3333333333, 36%, 95.0980392157%);text-align:center;}#mm2 .edgeLabel rect{opacity:0.5;background-color:hsl(93.3333333333, 36%, 95.0980392157%);fill:hsl(93.3333333333, 36%, 95.0980392157%);}#mm2 .labelBkg{background-color:rgba(242, 247, 238, 0.5);}#mm2 .cluster rect{fill:#f3f6fa;stroke:#c2d0df;stroke-width:1px;}#mm2 .cluster text{fill:#090704;}#mm2 .cluster span,#mm2 p{color:#090704;}#mm2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN",system-ui,sans-serif;font-size:12px;background:#f6f8fb;border:1px solid hsl(216, 0%, 87.4509803922%);border-radius:2px;pointer-events:none;z-index:100;}#mm2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#1c2b3a;}#mm2 :root{--mermaid-font-family:"trebuchet ms",verdana,arial,sans-serif;}</style><g><marker id="mm2_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm2_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm2_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm2_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="mm2_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="mm2_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"><g class="cluster default flowchart-label" id="SIDE"><rect style="" rx="0" ry="0" x="0" y="177.33999824523926" width="1989.90625" height="96"/><g class="cluster-label" transform="translate(994.953125, 177.33999824523926)"><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">サイドメニュー（常時表示）</tspan></text></g></g></g><g class="edgePaths"><path d="M1092.02,23.17L1092.02,28.003C1092.02,32.837,1092.02,42.503,1092.02,51.287C1092.02,60.07,1092.02,67.97,1092.02,71.92L1092.02,75.87" id="L-A01-A02-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A01 LE-A02" style="fill:none;" marker-end="url(#mm2_flowchart-pointEnd)"/><path d="M129.133,236.84L129.133,242.923C129.133,249.007,129.133,261.173,129.133,273.34C129.133,285.507,129.133,297.673,129.133,311.456C129.133,325.239,129.133,340.638,129.133,348.338L129.133,356.037" id="L-A03-A04-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A03 LE-A04" style="fill:none;" marker-end="url(#mm2_flowchart-pointEnd)"/><path d="M703.063,236.887L703.063,242.963C703.063,249.038,703.063,261.189,703.063,273.348C703.063,285.507,703.063,297.673,703.063,311.457C703.063,325.24,703.063,340.64,703.063,348.34L703.063,356.04" id="L-A07-A08-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A07 LE-A08" style="fill:none;" marker-end="url(#mm2_flowchart-pointEnd)"/><path d="M1342.117,244.34L1342.117,249.173C1342.117,254.007,1342.117,263.673,1342.117,274.59C1342.117,285.507,1342.117,297.673,1375.661,309.686C1409.205,321.699,1476.293,333.558,1509.837,339.488L1543.381,345.417" id="L-A10-A11-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A10 LE-A11" style="fill:none;" marker-end="url(#mm2_flowchart-pointEnd)"/><path d="M1235.355,107.413L1371.947,114.234C1508.539,121.055,1781.723,134.698,1918.314,146.352C2054.906,158.007,2054.906,167.673,2054.906,180.507C2054.906,193.34,2054.906,209.34,2054.906,225.34C2054.906,241.34,2054.906,257.34,2054.906,271.423C2054.906,285.507,2054.906,297.673,2021.362,309.686C1987.818,321.699,1920.731,333.558,1887.187,339.488L1853.643,345.417" id="L-A02-A11-0" class=" edge-thickness-normal edge-pattern-dotted flowchart-link LS-A02 LE-A11" style="fill:none;stroke-width:2px;stroke-dasharray:3;" marker-end="url(#mm2_flowchart-pointEnd)"/><path d="M948.684,107.413L812.092,114.234C675.5,121.055,402.316,134.698,265.725,145.469C129.133,156.24,129.133,164.14,129.133,168.09L129.133,172.04" id="L-A02-SIDE-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-A02 LE-SIDE" style="fill:none;" marker-end="url(#mm2_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g><g class="edgeLabel" transform="translate(129.1328125, 309.83999824523926)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">商品を選択</tspan></text></g></g><g class="edgeLabel" transform="translate(703.0625, 309.83999824523926)"><g class="label" transform="translate(-30, -7.5)"><rect rx="0" ry="0" width="60" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">新規発行</tspan></text></g></g><g class="edgeLabel" transform="translate(1342.1171875, 309.83999824523926)"><g class="label" transform="translate(-37.5, -7.5)"><rect rx="0" ry="0" width="75" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">注文を選択</tspan></text></g></g><g class="edgeLabel" transform="translate(2054.90625, 225.33999824523926)"><g class="label" transform="translate(-45, -7.5)"><rect rx="0" ry="0" width="90" height="15"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">直近注文から</tspan></text></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><rect rx="0" ry="0" width="0" height="0"/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row"/></text></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-A03-87" data-node="true" data-id="A03" transform="translate(129.1328125, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-95.1328125" y="-11.5" width="190.265625" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-03 商品管理 全商品一覧</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A05-88" data-node="true" data-id="A05" transform="translate(342.40625, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.140625" y="-11.585000038146973" width="140.28125" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-05 カテゴリ管理</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A06-89" data-node="true" data-id="A06" transform="translate(522.9609375, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-62.4140625" y="-11.502500057220459" width="124.828125" height="23.005000114440918"/><g class="label" style="" transform="translate(0, -7.502500057220459)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-06 バッジ管理</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A07-90" data-node="true" data-id="A07" transform="translate(703.0625, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-69.6875" y="-11.547500133514404" width="139.375" height="23.09500026702881"/><g class="label" style="" transform="translate(0, -7.547500133514404)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-07 ユーザー管理</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A09-91" data-node="true" data-id="A09" transform="translate(923.0859375, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-102.3359375" y="-11.502500057220459" width="204.671875" height="23.005000114440918"/><g class="label" style="" transform="translate(0, -7.502500057220459)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-09 手数料 マージン率設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A14-92" data-node="true" data-id="A14" transform="translate(1128.578125, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-55.15625" y="-11.5" width="110.3125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-14 送料設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A10-93" data-node="true" data-id="A10" transform="translate(1342.1171875, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-110.3828125" y="-19" width="220.765625" height="38"/><g class="label" style="" transform="translate(0, -15)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-10 注文管理 一覧</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（税率区分付き取引明細CSV）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A12-94" data-node="true" data-id="A12" transform="translate(1570.640625, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-70.140625" y="-11.5" width="140.28125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-12 締切時間設定</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A13-95" data-node="true" data-id="A13" transform="translate(1822.34375, 225.33999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-133.5625" y="-19" width="267.125" height="38"/><g class="label" style="" transform="translate(0, -15)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-13 お知らせ/プッシュ通知配信管理</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（フェーズ1は簡易版）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A01-85" data-node="true" data-id="A01" transform="translate(1092.01953125, 11.585000038146973)"><rect class="basic label-container" style="" rx="0" ry="0" x="-54.4609375" y="-11.585000038146973" width="108.921875" height="23.170000076293945"/><g class="label" style="" transform="translate(0, -7.585000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-01 ログイン</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A02-86" data-node="true" data-id="A02" transform="translate(1092.01953125, 100.2549991607666)"><rect class="basic label-container" style="" rx="0" ry="0" x="-143.3359375" y="-19.085000038146973" width="286.671875" height="38.170000076293945"/><g class="label" style="" transform="translate(0, -15.085000038146973)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-02 ダッシュボード 売上/注文サマリー</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">（手数料収益 概算）</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A04-99" data-node="true" data-id="A04" transform="translate(129.1328125, 372.83999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-117.4296875" y="-11.502500057220459" width="234.859375" height="23.005000114440918"/><g class="label" style="" transform="translate(0, -7.502500057220459)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-04 商品詳細・編集 バッジ付与</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A08-101" data-node="true" data-id="A08" transform="translate(703.0625, 372.83999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-126.7265625" y="-11.5" width="253.453125" height="23"/><g class="label" style="" transform="translate(0, -7.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-08 アカウント発行・招待QR発行</tspan></text></g></g><g class="node default default flowchart-label" id="flowchart-A11-103" data-node="true" data-id="A11" transform="translate(1698.51171875, 372.83999824523926)"><rect class="basic label-container" style="" rx="0" ry="0" x="-158.7890625" y="-26.5" width="317.578125" height="53"/><g class="label" style="" transform="translate(0, -22.5)"><rect/><text style=""><tspan xml:space="preserve" dy="1em" x="0" class="row">A-11 注文詳細 決済参照/返金・オーソリ取消</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">欠品キャンセル申請の承認</tspan><tspan xml:space="preserve" dy="1em" x="0" class="row">※運用は決済タイミング確定後に詳細化</tspan></text></g></g></g></g></g></svg></div></figure>
+<hr />
+<h2 id="4">4. 画面数サマリーと開発優先度</h2>
+<h3 id="41">4.1 画面数サマリー</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>ロール</th>
+<th>画面数</th>
+<th>内訳（優先度 高／中）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>発注者（アプリ）</td>
+<td>16</td>
+<td>高 15 ／ 中 1（C-14）</td>
+</tr>
+<tr>
+<td>出品者（アプリ）</td>
+<td>12</td>
+<td>高 10 ／ 中 2（S-10, S-11）</td>
+</tr>
+<tr>
+<td>管理者（Web）</td>
+<td>14</td>
+<td>高 11 ／ 中 3（A-02, A-06, A-13 ※A-02/A-13は簡易版を高としてフェーズ1に含む）</td>
+</tr>
+<tr>
+<td>共通</td>
+<td>5</td>
+<td>高 4（Z-01, Z-03, Z-04, Z-05）／ 中 1（Z-02）</td>
+</tr>
+<tr>
+<td><strong>合計</strong></td>
+<td><strong>47</strong></td>
+<td>高 40 ／ 中 7</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="42-34">4.2 開発フェーズ切り分け案（開発期間3〜4ヶ月を想定）</h3>
+<p><strong>フェーズ1（初回リリース・約3〜4ヶ月）— 「出品→閲覧→注文→決済→発送」のコアループを完成させる</strong></p>
+<p>※フェーズ1は47画面中40画面と規模が大きいため、本切り分けはあくまで機能面からの必須判定です。<strong>実現可能性（体制・工数）の裏付けは別途の概算見積・体制計画にて提示</strong>し、体制条件によってはフェーズ1範囲の再調整（例: A-06 の後ろ倒し、S-07のAI生成をリリース1.xへ繰延 等）を協議させてください。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>領域</th>
+<th>対象画面</th>
+<th>補足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>認証・招待・コンプライアンス</td>
+<td>C-01, C-02, C-03, C-04, S-01, A-01, A-07, A-08, Z-03, Z-04, Z-05</td>
+<td>招待制とストア審査要件の根幹。<strong>Z-03（規約同意）・Z-04（退会）は審査必須要件のためフェーズ1から除外不可</strong>。C-04（パスワード再設定）は、運営による手動再設定は本人確認・パスワード伝達経路のセキュリティリスクがあり、高齢者主体で発生頻度・問い合わせ負荷も高いと想定されるため<strong>フェーズ1に含める</strong>（方式は4.3-11で確定）</td>
+</tr>
+<tr>
+<td>発注コア</td>
+<td>C-05, C-06（カテゴリのみ）, C-07, C-08, C-09, C-10, C-11, C-12, C-13, C-15, <strong>C-16</strong></td>
+<td>締切時間表示・バッジ表示・在庫表示（売り切れ・在庫競合時の警告含む）・温度帯表示・<strong>送料表示（C-09/C-10）</strong>・配送先住所管理（C-16）・Stripe決済を含む。決済確定タイミングは1.3(2)の確定に従い詳細設計</td>
+</tr>
+<tr>
+<td>出品コア</td>
+<td>S-02, S-03, S-04, S-05, S-06, S-07（<strong>AI生成＝Should・任意ステップ。工数によりリリース1.x繰延可</strong>）, S-08, S-09, S-12</td>
+<td>3操作出品と定期商品テンプレートは高齢出品者の定着に直結するためフェーズ1必須。温度帯選択（S-03/S-05/S-06/S-07）・欠品キャンセル申請（S-09）を含む</td>
+</tr>
+<tr>
+<td>管理コア</td>
+<td>A-02（簡易版: 件数・金額・手数料収益概算）, A-03, A-04, A-05, A-09, <strong>A-10（注文一覧＋税率区分付き取引明細CSV出力）</strong>, A-11, A-12, <strong>A-13（簡易版: テキストのみの即時配信）</strong>, <strong>A-14（送料設定・簡易版）</strong></td>
+<td>手数料率・締切時間・送料・バッジ付与は運用開始初日から必要。<strong>C-05のお知らせバナーの配信手段としてA-13簡易版をフェーズ1に含める</strong>（画面なしの手動配信＝DB直接操作は運用リスクがあるため不採用）</td>
+</tr>
+<tr>
+<td>自動通知</td>
+<td>Z-05 ＋（配信画面なし・基盤実装）</td>
+<td>新着出品・受注のプッシュ自動通知はフェーズ1で基盤実装。許諾取得率確保のためZ-05をセットで実装</td>
+</tr>
+<tr>
+<td>共通（信頼性・オフライン）</td>
+<td><strong>Z-01</strong></td>
+<td>エラー・通信オフライン表示。「電話で聞く」導線（tel:）とオフライン時の「あとで自動送信」待ち表示（画像のローカルキュー・自動再送）を含む。圏外の多い現場での出品継続に直結（F-115対応）するためフェーズ1へ引き上げ</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>リリース1.x（フェーズ1完了後の機能拡充）</strong></p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>対象画面・機能</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C-06 キーワード検索</td>
+<td>商品数が少ない立ち上げ期はカテゴリ導線で十分</td>
+</tr>
+<tr>
+<td>C-14・S-11 通知一覧</td>
+<td>通知はOSのプッシュ受信で当面代替可能。<strong>フェーズ1の発注者下部タブは4枠（ホーム/カテゴリ/注文履歴/アカウント）、出品者は3枠（出品/受注/アカウント）とし、リリース1.xで通知タブ・売上タブを追加</strong>（3.1/3.2の遷移図に明記）</td>
+</tr>
+<tr>
+<td>S-07 AI生成（タイトル・説明文）ボタン</td>
+<td>Should。<strong>手入力＋定型テンプレートへ縮退できる設計を前提とした「フェーズ1目標」</strong>であり、工数状況によりリリース1.xへ繰延可</td>
+</tr>
+<tr>
+<td>S-10 売上確認</td>
+<td>立ち上げ期は管理者からの共有で代替可能（要協議）。<strong>画面提供はリリース1.x（F-209）</strong>。受取額表示は価格モデル（F-007）に従う。インボイス対応方針の確定後に帳票仕様を含めて実装</td>
+</tr>
+<tr>
+<td>A-02 ダッシュボード拡充（グラフ・出品者別/商品別分析）、A-06 バッジ管理、A-13 拡充（配信先ロール指定・予約配信・配信履歴）</td>
+<td>簡易配信（A-13簡易版）・固定バッジ・簡易ダッシュボード（手数料収益概算まで）で初期運用可能</td>
+</tr>
+<tr>
+<td>Z-02 共通画面、C-13 再注文</td>
+<td>運用安定化・利便性向上の位置づけ</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="43">4.3 次回確認事項（ヒアリングで確定が必要な仮置き項目）</h3>
+<ol>
+<li><strong>兼任アカウント</strong>の有無（発注者・出品者の兼任。フェーズ1のUIは1ロール表示固定、基盤は複数ロール保持可能な設計）— 1.1(1) の前提に影響（要件書 第10章にも計上）</li>
+<li><strong>配送・受け渡し方法</strong>（配送先入力の要否、送料の扱い、直接受け渡しの有無）— C-02/C-10/C-16/S-09/A-14 の仕様に影響</li>
+<li><strong>締切時間の粒度</strong>（全体一律か、出品者別・商品別か）— A-12 の仕様に影響</li>
+<li><strong>決済フロー全体の確定</strong> — (a) 精算スキーム（Stripe Connect 等、1.3(1)の法的整理。取引スキーム〔買取再販 or 仲介〕の確定・弁護士確認を含む）、(b) <strong>決済確定タイミング（即時決済 or オーソリ→キャプチャ）</strong>、(c) オーソリ有効期間（通常7日）と締切〜出荷確定リードタイムの整合、(d) 返金・オーソリ取消の運用 — S-12/A-11/C-10 に影響</li>
+<li>注文ステータスの定義（受付／発送済 等）と、締切前リマインド通知の要否</li>
+<li>手数料率の設定単位（全体一律か、出品者別・カテゴリ別か）</li>
+<li><strong>発注者の属性</strong>（事業者限定か、一般消費者を含むか）— 特定商取引法に基づく表記の要否（Z-03）に影響</li>
+<li><strong>インボイス（適格請求書）対応</strong> — 発行要否、発行主体（出品者発行／プラットフォームの媒介者交付特例）、出品者の課税/免税区分の管理方法、軽減税率8%/10%の扱い — C-13/S-10/S-12/A-10 に影響</li>
+<li><strong>退会時のデータ取り扱い</strong> — 未発送注文・未精算売上がある場合の退会制御、Stripe顧客データ・取引履歴の削除/保持方針（法定保存義務との整合）— Z-04/A-07 に影響</li>
+<li><strong>在庫引当タイミング</strong>（カート投入時か注文確定時か）と、同時注文競合時の画面挙動 — C-08/C-09/C-10 に影響</li>
+<li><strong>パスワード再設定の方式</strong> — メールリンク方式か、SMS/メールのワンタイムコード方式（パスワードレスログイン。高齢者UXとの相性が良い）か — C-03/C-04 に影響</li>
+</ol>
+<p>以上</p></div></article><article class="doc" data-doc="tech" hidden><header class="masthead"><div class="mh-kick"><span class="mh-code">03</span>ENGINEERING</div><h1 class="mh-title">技術課題と解決策</h1><p class="mh-sub">推奨技術スタックと13の技術課題、スケジュールリスク</p></header><div class="prose"><hr />
+<h3 id="_1">版数</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>版</th>
+<th>日付</th>
+<th>変更内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v1.0</td>
+<td>2026-07-16</td>
+<td>初版</td>
+</tr>
+<tr>
+<td>v1.1</td>
+<td>2026-07-17</td>
+<td>3ドキュメント間整合性レビュー反映（決定ログ反映：価格モデル＝加算モデル統一、ロール名称統一、フェーズ用語の分離、要件ID相互対応 等）</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><strong>文書について</strong></p>
+<p>本書は、ご提示いただいた要求事項（3〜4ヶ月での初期リリース、スマートフォンアプリ必須、少人数開発体制、クローズドβからの段階公開、生産者への売上還元（取引スキームは要確認）を伴う決済、高齢者・アナログ層への配慮 等）を前提に、技術的な課題とその解決策を整理したものです。</p>
+<ul>
+<li><strong>前提のご確認のお願い</strong>: 本書が前提とする要求事項は、下記「0. 本書が前提とする要求事項」に一覧化しています。<strong>前提に相違・抜け漏れがないかご確認ください</strong>。相違があった場合、該当する課題・解決策・スケジュールは再検討します。</li>
+<li>ヒアリングで確定していない事項は「<strong>推奨</strong>」「<strong>仮置き</strong>」と明示しています。確定事項として扱わないでください。</li>
+<li><strong>本書における「リリース1.x」＝フェーズ1完了後の機能拡充</strong>を指します（要件定義書3.2「リリース1.x候補」と対応）。道の駅・温泉施設等への商材拡大や市町村・自治体の横展開などの<strong>事業拡大は「（事業）フェーズ2」</strong>と表記して区別します。</li>
+<li>法規制（資金決済法、特定商取引法、食品表示法、消費税・インボイス制度、個人情報保護法 等）に関わる記述は一般的な整理であり、<strong>最終判断には弁護士・税理士等の専門家確認が必要</strong>です。</li>
+<li>Stripe・Apple・Google・LINE・配送業者等の外部サービスの仕様・料金・審査基準は変更されることがあるため、実装着手時点での最新公式ドキュメントの確認を前提としてください。</li>
+</ul>
+<hr />
+<h2 id="0">0. 本書が前提とする要求事項（要確認）</h2>
+<p>下表の「要件定義書 第10章 対応」列は、各前提が要件定義書「第10章 未確定事項・クライアント確認事項」のどの項目で確定されるかの参照です。</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>前提とした要求事項</th>
+<th>要件定義書 第10章 対応（参考）</th>
+<th>貴社確認</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>初期リリース（クローズドβ）まで3〜4ヶ月</td>
+<td>#16（β計画）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>2</td>
+<td>スマートフォンアプリで完結する体験（「LINEのような通知」「ホーム画面から開く」）はヒアリング確定要件。ただし<strong>ネイティブ／クロスプラットフォーム／PWAの実装形態は未確定</strong></td>
+<td>#7（対応OS・アプリ形態）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>3</td>
+<td>少人数開発体制（エンジニア1〜3名規模を想定・仮置き）</td>
+<td>―（開発体制の前提。#11 運用体制と関連）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>4</td>
+<td>QRコードによる限定配布のクローズドβから始め、段階的に一般公開</td>
+<td>#16（β規模・期間・一般公開判断）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>5</td>
+<td>発注者の支払いからプラットフォーム手数料（マージン）を得て、生産者（出品者）へ売上が渡る取引・決済。<strong>取引スキーム（買取再販／マーケットプレイス仲介）は未確定</strong></td>
+<td>#5（資金フロー・取引スキーム）＝最優先</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>6</td>
+<td>出品者に高齢者・スマホ操作に不慣れな層を含む（出品のしやすさが生命線）</td>
+<td>―（非機能6.1 ユーザビリティ）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>7</td>
+<td>写真からのAIによる商品タイトル・説明文の自動生成（Should）</td>
+<td>#17（AI機能の採否・費用）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>8</td>
+<td>漁港・農村部など通信環境が不安定な現場での出品（写真アップロード）</td>
+<td>―（非機能／課題2-6で対応）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>9</td>
+<td>「◯時までの注文は当日発送」等の締切時間管理</td>
+<td>#10（締切・出荷）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>10</td>
+<td>出品者・発注者・管理者の3ロール。将来は市町村・道の駅等のテナント参加構想</td>
+<td>―（3ロールは確定。兼任アカウントの有無は要確認。テナントは事業フェーズ2）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>11</td>
+<td>将来的に数百億円規模の流通額を目指す拡張性</td>
+<td>―（非機能6.5 拡張性）</td>
+<td>☐</td>
+</tr>
+<tr>
+<td>12</td>
+<td>鮮魚・農産物という商材特性（少量・単発在庫、鮮度、天候による欠品、クール便配送）</td>
+<td>#1（物流・配送・送料）</td>
+<td>☐</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>上記に含まれないご要望（例: 特定の決済手段、既存システム連携、特定自治体との協業条件 等）がヒアリングで挙がっていた場合はご指摘ください。</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 推奨技術スタック</h2>
+<h3 id="11">1.1 選定の前提条件（仮置き）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>前提</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>納期</td>
+<td>初期リリース（クローズドβ）まで <strong>3〜4ヶ月</strong></td>
+</tr>
+<tr>
+<td>配布形態</td>
+<td>スマートフォンアプリで完結する体験（iOS / Android 両対応）。QRコードによる限定配布からスタート。<strong>ネイティブ／クロスプラットフォーム／PWAの実装形態は未確定（第10章#7）</strong></td>
+</tr>
+<tr>
+<td>開発体制</td>
+<td>少人数（エンジニア1〜3名規模を想定・仮置き）</td>
+</tr>
+<tr>
+<td>ユーザー</td>
+<td>出品者（漁業者・農業者、高齢者・アナログ層を含む）／発注者／管理者の3ロール</td>
+</tr>
+<tr>
+<td>決済</td>
+<td>プラットフォームが手数料（マージン）を得て、生産者へ売上を渡す取引。<strong>取引スキーム（買取再販／マーケットプレイス仲介）は要確認（第10章#5・課題2-2参照）</strong></td>
+</tr>
+<tr>
+<td>配送</td>
+<td>出品者からの直送（クール便含む）。フェーズ1は配送業者システムとのAPI連携なしで運用成立させる</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="12">1.2 推奨構成（サマリー）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>レイヤー</th>
+<th>推奨</th>
+<th>役割</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>モバイルアプリ</td>
+<td><strong>Flutter</strong>（iOS / Android 共通コードベース）</td>
+<td>出品者・発注者向けアプリ</td>
+</tr>
+<tr>
+<td>バックエンド（BaaS）</td>
+<td><strong>Firebase</strong>（Authentication / Cloud Firestore / Cloud Functions / Cloud Storage / Cloud Messaging）</td>
+<td>認証・DB・サーバーロジック・画像保管・プッシュ通知</td>
+</tr>
+<tr>
+<td>管理画面（Web）</td>
+<td><strong>Next.js</strong>（Vercel または Firebase Hosting、いずれも仮置き）</td>
+<td>管理者向け管理コンソール（商品審査、ユーザー管理、売上管理、通知配信）</td>
+</tr>
+<tr>
+<td>決済</td>
+<td><strong>Stripe Connect</strong></td>
+<td>マーケットプレイス決済・生産者への分配・KYC（取引スキームの確定に従う。課題2-2参照）</td>
+</tr>
+<tr>
+<td>AI</td>
+<td><strong>Claude API 等の Vision 対応 LLM</strong></td>
+<td>写真からの商品説明・タイトル自動生成（Should）</td>
+</tr>
+<tr>
+<td>監視・分析</td>
+<td>Firebase Crashlytics / Google Analytics for Firebase（推奨）</td>
+<td>障害監視・利用分析</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>一人（または少人数）のチームが、アプリ・サーバー・管理画面の3面を3〜4ヶ月で作り切ることを最優先にした構成です。「自前でサーバーを持たない」「決済・認証・通知など枯れた機能はマネージドサービスに寄せる」ことが基本方針です。</p>
+<p><strong>本推奨構成は「前提の確認結果により見直す条件付き推奨」です。</strong> 特に第10章#7（アプリ形態：ネイティブ／クロスプラットフォーム／PWA）の確定結果によっては、モバイル層の技術選定（下記1.3(1)）を見直します。</p>
+</blockquote>
+<h3 id="13">1.3 選定理由と代替案比較</h3>
+<h4 id="1-flutter">(1) モバイルアプリ: Flutter（推奨・条件付き）</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>Flutter（推奨）</th>
+<th>React Native</th>
+<th>ネイティブ（Swift / Kotlin）</th>
+<th>PWA（Webアプリ）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iOS/Android同時開発</td>
+<td>◎ 1コードベース</td>
+<td>◎ 1コードベース</td>
+<td>× 2倍の工数</td>
+<td>◎</td>
+</tr>
+<tr>
+<td>開発速度（3〜4ヶ月）</td>
+<td>◎ ホットリロード・UI部品が豊富</td>
+<td>○</td>
+<td>× 期間内は非現実的</td>
+<td>◎</td>
+</tr>
+<tr>
+<td>UIの自由度（高齢者向け大型UI）</td>
+<td>◎ 描画を自前で持つためデザイン再現性が高い</td>
+<td>○</td>
+<td>◎</td>
+<td>△</td>
+</tr>
+<tr>
+<td>プッシュ通知・カメラ等の端末機能</td>
+<td>◎</td>
+<td>◎</td>
+<td>◎</td>
+<td>△ iOSのWebプッシュは制約が多く、「LINEのような通知体験」の実現が困難</td>
+</tr>
+<tr>
+<td>Firebaseとの親和性</td>
+<td>◎（FlutterFire公式サポート）</td>
+<td>○</td>
+<td>○</td>
+<td>○</td>
+</tr>
+<tr>
+<td>ストア配布（QR→段階公開）</td>
+<td>◎</td>
+<td>◎</td>
+<td>◎</td>
+<td>×（ストア外配布になるが、通知・ホーム画面体験が弱い）</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Flutterを推奨する理由</strong>: 1つのコードでiOS/Android両対応でき、Firebaseとの公式連携（FlutterFire）が充実。高齢者向けの大きなボタン・大きな文字などカスタムUIの再現性が高い。</li>
+<li><strong>PWAを採らない理由</strong>: 「LINEのような通知」「ホーム画面のアプリアイコンから開く体験」がアプリ要件である以上、iOSにおけるWebプッシュの制約・導入手順の煩雑さ（ホーム画面追加が必要 等）が高齢者層には致命的なハードルになるため。</li>
+<li>代替として React Native も成立しますが、チームの習熟度で選んで問題ありません（開発者のスキルセットが最優先。仮置き）。</li>
+<li><strong>重要（条件付き推奨）</strong>: 「スマホアプリで完結する体験」はヒアリング確定要件ですが、<strong>ネイティブ／クロスプラットフォーム／PWAの実装形態は未確定（第10章#7）</strong>です。本項の推奨は第10章#7の確認結果を受けて見直します。</li>
+</ul>
+<h4 id="2-firebase">(2) バックエンド: Firebase（推奨）</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>Firebase（推奨）</th>
+<th>Supabase</th>
+<th>自前API（Rails / NestJS 等 + RDB）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>初期構築速度</td>
+<td>◎ サーバー構築不要</td>
+<td>○</td>
+<td>× インフラ・認証・通知を自作</td>
+</tr>
+<tr>
+<td>リアルタイム同期（在庫・通知）</td>
+<td>◎ Firestoreリアルタイムリスナー</td>
+<td>○ Realtime機能あり</td>
+<td>△ 自作（WebSocket等）</td>
+</tr>
+<tr>
+<td>プッシュ通知</td>
+<td>◎ FCMが同一プラットフォーム内</td>
+<td>△ 別途FCM連携</td>
+<td>△ 別途FCM/APNs連携</td>
+</tr>
+<tr>
+<td>トランザクション/在庫の整合性</td>
+<td>○ Firestoreトランザクションで対応可</td>
+<td>◎ PostgreSQLの行ロック</td>
+<td>◎ RDBの行ロック</td>
+</tr>
+<tr>
+<td>複雑な集計・帳票</td>
+<td>△ 苦手（BigQuery連携等で補完）</td>
+<td>○ SQLが使える</td>
+<td>◎</td>
+</tr>
+<tr>
+<td>運用負荷（少人数）</td>
+<td>◎ フルマネージド</td>
+<td>○</td>
+<td>×</td>
+</tr>
+<tr>
+<td>将来の移行性</td>
+<td>△ ベンダーロックインあり</td>
+<td>○</td>
+<td>◎</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Firebaseを推奨する理由</strong>: 認証・DB・ストレージ・プッシュ通知・サーバーレス関数が単一プラットフォームで完結し、3〜4ヶ月納期における統合コストが最小。オフライン対応（後述の通信環境課題）にもFirestoreのオフラインキャッシュが有効。</li>
+<li><strong>注意点</strong>: 売上集計・帳票などSQL的な処理は苦手なため、<strong>リリース1.x以降</strong>で BigQuery 連携や一部 PostgreSQL（Cloud SQL / Supabase）併用を拡張ポイントとして残します（後述 2-11。なおBigQueryエクスポート自体はフェーズ1から有効化しておく）。</li>
+<li>代替の Supabase は、在庫整合性（行ロック）や集計に強い一方、プッシュ通知やモバイルSDKの成熟度でFirebaseに一歩譲ります。<strong>チームがSQLに強い場合は有力な代替</strong>です。</li>
+</ul>
+<h4 id="3-nextjs">(3) 管理画面: Next.js（推奨）</h4>
+<ul>
+<li>管理者（および必要に応じて市町村・道の駅などの将来テナント）向けの管理業務はPC・タブレットでの利用が中心と想定されるため（仮置き）、Web管理画面を分離します。</li>
+<li>Next.js + Firebase Admin SDK（Cloud Functions経由）で、商品審査・ユーザー管理・売上/振込状況の確認・お知らせ配信を実装。</li>
+<li>代替: アプリ内に管理機能を同居させる案は、ストア審査のたびに管理機能もリリースが必要になり運用が硬直化するため非推奨。</li>
+</ul>
+<h4 id="4-stripe-connect-2-2">(4) 決済: Stripe Connect（推奨・詳細は 2-2）</h4>
+<ul>
+<li>マーケットプレイス型（出品者への分配・プラットフォーム手数料徴収）である以上、通常の Stripe Payments では要件を満たせません。ただし取引スキーム（買取再販／仲介）によって最適な構成が変わるため、詳細は課題 2-2 を参照。</li>
+<li>代替比較（概要）:</li>
+</ul>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>Stripe Connect（推奨）</th>
+<th>PAY.JP / GMO等の通常決済 + 自前分配</th>
+<th>代引き・銀行振込のみ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>出品者への売上分配</td>
+<td>◎ プラットフォーム機能として提供</td>
+<td>× 自前で振込業務・原資管理が必要</td>
+<td>×</td>
+</tr>
+<tr>
+<td>資金決済法上のリスク</td>
+<td>○ 適切な構成＋規約整備で回避しやすい</td>
+<td>× プラットフォームが資金を預かる構成になりやすく法的リスク大（<strong>専門家確認必須</strong>）</td>
+<td>○</td>
+</tr>
+<tr>
+<td>出品者KYC</td>
+<td>◎ Stripeがオンラインで代行</td>
+<td>× 自前</td>
+<td>−</td>
+</tr>
+<tr>
+<td>実装工数</td>
+<td>○</td>
+<td>× 大</td>
+<td>○ 小（ただしUX最悪）</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="2">2. 技術的課題と解決策</h2>
+<h3 id="2-1-34-f-205f-112f-113f-114">2-1. 3〜4ヶ月納期とアプリストア審査 （関連要件: F-205／F-112・F-113・F-114）</h3>
+<p><strong>課題の内容</strong>
+- iOS（App Store）・Android（Google Play）とも、アプリ公開には審査があり、初回審査は特に時間がかかりやすい（数日〜、リジェクト時はさらに往復）。マーケットプレイス・決済・ユーザー生成コンテンツ（UGC）を含むアプリは審査観点が多く、リジェクトリスクが相対的に高い。
+- 一方で本件は「まずQRコードで限定ユーザーに配布し、クローズドに始めたい」という要件があり、<strong>一般公開前の限定配布</strong>とストア審査の仕組みを整合させる必要がある。
+- ストア審査では、<strong>アプリ内アカウント削除（退会）・利用規約/プライバシーポリシーの表示と同意・プッシュ通知許諾の事前説明</strong>が必須または実質必須の観点となる（要件 F-112／F-113／F-114）。</p>
+<p><strong>放置した場合のリスク</strong>
+- リリース直前に審査リジェクトが発生し、納期を1〜4週間以上超過。クローズドβの開始時期（漁期・収穫期などの季節要因がある場合はなおさら）を逃す。
+- 「ストアに出す＝全世界に公開」と誤解したまま進めると、クローズド運用の要件と矛盾した設計・告知になる。
+- アカウント削除導線の欠落など、ストアポリシー必須項目の作り込み漏れによる後追いリジェクト。</p>
+<p><strong>解決策・推奨アプローチ</strong></p>
+<p>段階配布戦略（推奨）:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>フェーズ</th>
+<th>iOS</th>
+<th>Android</th>
+<th>QRコードとの整合</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① クローズドβ</td>
+<td><strong>TestFlight</strong>（外部テスターは最大1万人、招待リンク/メール。外部テスト開始時にBeta App Reviewあり）</td>
+<td><strong>Play 内部テスト</strong>（最大100人・審査ほぼ即時）→ <strong>クローズドテスト</strong>（メール/グループ指定）</td>
+<td>QRコードに <strong>TestFlightの招待リンク / Playのオプトインリンク</strong> を割り当てて配布可能</td>
+</tr>
+<tr>
+<td>② 限定公開</td>
+<td><strong>通常公開＋招待コード/承認制ログインで実質限定</strong>（主経路・推奨）。App Storeの<strong>Unlisted（リンク限定）配布</strong>は、社内・パートナー等の限定用途を想定した制度であり、将来一般公開予定のコンシューマーアプリでは<strong>承認されない可能性がある</strong>ため、承認が得られた場合の代替手段と位置づける</td>
+<td>Playの<strong>クローズドテスト継続</strong> または 通常公開＋招待制ログインで実質限定</td>
+<td>QRコード→ストアの直接リンク。<strong>アプリ側で招待コード/承認制ログインを併用</strong>し、リンクが拡散しても利用者を制御</td>
+</tr>
+<tr>
+<td>③ 一般公開</td>
+<td>App Store 通常公開（招待制を解除）</td>
+<td>Google Play 通常公開</td>
+<td>QRコードはそのままストアリンクとして継続利用</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>アプリ内アカウント削除の実装（必須）</strong>: App Store Guideline 5.1.1(v) および Google Play のアカウント削除ポリシーにより、アプリ内でアカウント登録（招待経由を含む）を提供する場合、<strong>アプリ内からのアカウント削除手段の提供が必須</strong>です（要件 F-112）。未発送注文・未精算売上がある場合の削除制御を含めて設計・実装し、審査時に確認できる状態にします。</li>
+<li><strong>利用規約・プライバシーポリシー／通知許諾</strong>: 登録時の規約・ポリシー同意取得（F-113）と、プッシュ通知許諾の事前説明導線（F-114）をフェーズ1で実装。プライバシーポリシーURLはストア審査の前提物のため、審査前に用意する（3.2・2-12参照）。</li>
+<li><strong>招待制ログインを実装する場合の審査対応（重要）</strong>: App Reviewでは審査員がアプリ内を確認できる必要があるため、<strong>審査用のデモアカウント（テスト用の招待コード・ログイン情報）をApp Store Connectで提出する</strong>。デモアカウントの準備・保守を審査プロセスの一部として計画に含める。</li>
+<li><strong>開発着手から2〜4週間の早期に「中身が最小限のビルド」で開発者アカウント取得・初回審査（TestFlight Beta App Review含む）を通しておく</strong>ことを強く推奨します。初回が最も落ちやすいため、審査リスクをプロジェクト前半に移動させます。</li>
+<li>Apple Developer Program / Google Play Console のアカウント取得（法人確認・D-U-N-S番号取得等）は<strong>リードタイムが読めない</strong>ため、契約直後に着手。<strong>Google Playは法人アカウントでの取得を前提とします</strong>（新規の個人アカウントには、製品版公開前に一定人数・一定期間のクローズドテスト実績〔例: 20名・14日間〕が義務付けられており、③一般公開のタイミングが直接遅延するため）。</li>
+<li>ストアに出さずに配布する手段（iOSのAd Hoc配布や企業内配布）は、対象が不特定の一般生産者・発注者である本件では規約上・運用上不適切なため採用しません。</li>
+<li>「ストア外で自由に配布できる」と断定できる仕組みは現状ないため、<strong>限定配布＝TestFlight / 内部・クローズドテスト / 通常公開＋招待制ログイン</strong>の組み合わせで実現するのが現実的です。</li>
+</ul>
+<p><strong>スケジュール・コストへの影響</strong>
+- アカウント取得・初回審査の前倒しで、後半の審査待ちリスクを吸収（クリティカルパス対策。第3章参照）。
+- 追加コスト: Apple Developer Program 年会費、Google Play 登録料（一回）程度。工数面では審査対応・リジェクト対応バッファとして<strong>2〜3週間</strong>をスケジュールに織り込むことを推奨。</p>
+<hr />
+<h3 id="2-2-stripe-connect-f-104f-007f-110f-207">2-2. マーケットプレイス型決済の実装（Stripe Connect）と消費税 （関連要件: F-104／F-007／F-110／F-207）</h3>
+<p><strong>課題の内容</strong>
+- 本件は「<strong>発注者が販売価格を支払う → プラットフォームが手数料（マージン）相当額を得る → 出品者（生産者）に原価相当額が渡る</strong>」資金フロー。価格モデルは<strong>加算モデル</strong>（出品者が原価を入力 → 管理者設定のマージン率/額を加算 → 販売価格を自動算出して発注者に総額表示。要件 F-007）で統一する。単純なStripe Payments（自社への入金のみ）では以下が実現できない:
+  - 出品者ごとの売上分配・振込
+  - プラットフォーム手数料（マージン）の自動徴収
+  - 出品者の本人確認（KYC）と受取口座登録
+- <strong>取引スキームの確定が最優先論点</strong>（第10章#5）。後述の「買取再販モデル」か「マーケットプレイス（仲介）モデル」かで、必要な決済構成・資金決済法上の整理・在庫/売れ残りリスクの所在が変わる。
+- プラットフォームが購入代金を「預かる」構成・規約にすると、<strong>資金決済法上の資金移動業等に該当するおそれ</strong>がある（該当性の判断は<strong>専門家確認が必須</strong>）。
+- さらに、<strong>食品は消費税の軽減税率8%（酒類・一部加工品は10%）の対象</strong>であり、価格・手数料・分配額の計算と表示のすべてに税区分が関わる。</p>
+<p><strong>取引スキームの比較（新規・第10章#5で確定）</strong></p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>買取再販モデル</th>
+<th>マーケットプレイス（仲介）モデル（推奨候補）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>売主（契約主体）</td>
+<td>プラットフォーム（運営）が売主</td>
+<td>各出品者が売主。運営は「場」を提供し手数料を得る</td>
+</tr>
+<tr>
+<td>想定決済構成</td>
+<td><strong>Stripe Payments 単体で成立</strong>（運営が代金を収受し仕入代金を出品者へ支払う）</td>
+<td><strong>Stripe Connect 推奨</strong>（代金が出品者に帰属し、運営は手数料のみ受領）</td>
+</tr>
+<tr>
+<td>資金決済法</td>
+<td>自社取引のため為替取引該当の論点は生じにくい</td>
+<td>代理受領条項の整備等で為替取引該当を回避する構成が中核（<strong>弁護士確認必須</strong>）</td>
+</tr>
+<tr>
+<td>在庫・売れ残りリスク</td>
+<td><strong>運営が負う</strong>（仕入・在庫リスク）</td>
+<td>出品者が負う（運営は在庫リスクを負わない）</td>
+</tr>
+<tr>
+<td>消費税・仕入税額控除</td>
+<td>運営が仕入・売上を計上</td>
+<td>媒介者交付特例等の検討が必要（出品者の課税/免税区分に依存）</td>
+</tr>
+<tr>
+<td>少人数運営との相性</td>
+<td>在庫・与信・返品原資を運営が抱えるため負荷大</td>
+<td>決済・分配・KYCをStripeへ寄せられ運用負荷が小さい</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>ヒアリングの「農家から買い取った野菜」という表現からは<strong>買取再販モデル</strong>も、<strong>マーケットプレイス（仲介）モデル</strong>も成立し得ます。どちらを採るかは事業判断・法務判断であり、<strong>要件定義書 第10章#5「取引スキーム（買取再販 or 仲介）の確定」を最優先確認事項</strong>とします。以下の Stripe Connect を用いた解決策は「仲介モデルを採る場合」を主に想定した構成です。</p>
+</blockquote>
+<p><strong>放置した場合のリスク</strong>
+- 決済を通常のStripe Paymentsで作ってしまい、後から分配・KYC要件が判明して<strong>決済まわりを全面作り直し</strong>（1〜2ヶ月規模の手戻り）。
+- 自社口座で代金を受けて手動振込する運用にした場合、資金決済法・出資法等への抵触リスク、振込ミス・未払いトラブル、経理負荷の増大。
+- 出品者KYCを自前でやろうとすると、犯罪収益移転防止法水準の本人確認業務を自社で抱え込むことになり、少人数体制では破綻する。
+- 税率区分を持たないデータ設計で作ると、明細出力・帳票・インボイス対応の段階で<strong>価格・手数料まわりの全面改修</strong>が発生する。</p>
+<p><strong>解決策・推奨アプローチ（仲介モデルを採る場合）</strong>
+- <strong>Stripe Connect を採用</strong>（推奨）。ポイント:
+  - <strong>アカウント種別</strong>: 出品者の負担を最小化するため、Stripeのダッシュボード操作を出品者に求めないタイプの連結アカウント（現行のStripeでは統合されたConnectアカウント構成。旧来の「Express相当」の体験）を推奨。オンボーディング（氏名・住所・口座・本人確認書類）は<strong>Stripeがホストするフォーム</strong>に任せ、アプリからはリンクを開くだけにする。高齢者向けには<strong>運営が対面・電話でオンボーディングを代行支援する運用</strong>を併設（推奨）。
+  - <strong>価格モデル（加算モデル）とStripeの対応関係</strong>: 販売価格＝原価＋マージン（F-007）で自動算出し、<strong>発注者へは税込の販売価格を総額表示</strong>する。Stripe Connect上では、<strong>発注者は販売価格を支払い、マージン相当額を <code>application_fee_amount</code> としてプラットフォームが受領し、原価相当額が出品者に帰属する</strong>、という対応関係になる。
+  - <strong>資金フロー（チャージ方式の正確な理解）</strong>: Connectには主に2方式がある。
+    - <strong>Destination charge</strong>: 決済はプラットフォームのStripeアカウント上で作成され、資金は<strong>一旦プラットフォームのStripe残高を経由してから</strong>、<code>application_fee_amount</code>（プラットフォーム手数料＝マージン相当）を差し引いた額が連結アカウントへ移動（transfer）される。<strong>自社の銀行口座は経由しない</strong>が、「出品者へ直接送られる」わけではない点に注意。
+    - <strong>Direct charge</strong>: 決済を出品者の連結アカウント側で作成し、プラットフォームはアプリケーション手数料を徴収する。資金は当初から出品者側のアカウントに帰属する。
+    - どちらを採るかは実装容易性（フェーズ1はDestination chargeが実装しやすい・仮置き）と法的整理の両面から決定する。<strong>いずれの方式でも、利用規約に「プラットフォームが出品者の代理人として購入代金を受領する」旨の代理受領条項を整備することが、資金決済法との関係での実務上の中核</strong>であり、技術構成だけで法的リスクが解消されるわけではない（<strong>弁護士確認必須</strong>）。
+  - <strong>自動マージン計算</strong>: 商品原価・送料・手数料率（カテゴリ別/出品者別の可変を想定するなら設定テーブル化。要件 F-207）から販売価格および <code>application_fee_amount</code> をCloud Functions側で計算。<strong>価格・手数料計算ロジックはサーバー側にのみ置き、アプリには持たせない</strong>（改ざん・不整合防止）。送料を手数料計算の対象に含めるか否かは業務ルールとして先に確定する（2-9参照）。
+  - <strong>入金サイクル</strong>: <strong>出品者への入金はStripeが提供する入金スケジュール設定に従う</strong>（日次/週次等の断定は避け、実装時点の最新仕様を確認）。生産者には「売上はStripeの入金スケジュールに従ってあなたの口座へ直接振り込まれる」と案内できる。振込タイミングの細かい制御が必要なら手動payoutも選択肢。
+  - <strong>決済確定タイミング（第10章の確認事項に従う）</strong>: 締切後に出品者が在庫・出荷を確定する業務フローでは、注文時即時決済だと欠品・キャンセル時の返金が多発するため、「注文時オーソリ（与信枠確保）→出荷確定時キャプチャ（売上確定）」方式が有力（仮置き）。<strong>カードオーソリの有効期間（通常7日）と、締切〜出荷確定リードタイムの整合検証が必要</strong>であり、リードタイムが7日を超えるケースの有無を含めて確認事項（要件定義書 第10章「決済確定タイミング」）の決定に従う。F-104（決済）・F-107（返金・注文取消）と整合させる。
+  - <strong>返金・キャンセル</strong>: 鮮魚・農産物は天候等での欠品・キャンセルが起こり得るため、返金時の手数料の扱い（手数料も返すか）を<strong>業務ルールとして先に決めて</strong>から実装する。<strong>キャプチャ前はオーソリ取消、キャプチャ後は返金</strong>の両処理を用意する（F-107）。
+- <strong>消費税への対応（フェーズ1から必須）</strong>:
+  - <strong>商品マスタに税率区分（8% / 10%）を持たせる</strong>。食品は原則軽減税率8%だが、酒類・一部加工品は10%であり、出品時に品目カテゴリから自動判定＋出品者/管理者確認できる設計とする（<strong>区分の正確な判定基準は税理士確認</strong>）。
+  - <strong>消費者向け価格は税込の総額表示</strong>とする（総額表示義務）。加算モデルに従い、<strong>出品者は原価を入力し、システムがマージン加算後の税込販売価格を算出して発注者へ総額表示する</strong>。
+  - <strong>原価が税込か税抜か・端数処理（円未満処理）の扱いは税理士確認事項</strong>（第10章#13関連）として初期に整理する。
+  - プラットフォーム手数料（課税役務提供に当たるのが一般的な整理）・出品者への分配額の<strong>税務上の取り扱い、出品者の課税/免税事業者区分の扱いは税理士確認事項</strong>として初期に整理する。
+  - 取引明細（CSV出力。2-12参照）には<strong>税率区分・税額を項目として持たせ</strong>、後のインボイス対応（リリース1.x）に備える。
+- 特定商取引法上の表記義務、プラットフォーム運営会社と出品者の責任分界（利用規約）についても<strong>弁護士確認を推奨</strong>。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- Stripe Connect対応で通常決済比 <strong>+2〜4週間</strong>（オンボーディング導線、Webhook処理、返金フロー含む）。ただし作り直しリスクを考えれば最初からConnectで作るのが総コスト最小。
+- 税率区分・税込価格の設計は初期から織り込めば<strong>数日</strong>の追加で済む（後付け改修は決済・明細全体に波及するため高コスト）。
+- 費用: Stripe決済手数料（国内カードで数%程度）＋Connect関連手数料が売上連動で発生。<strong>固定費はほぼゼロ</strong>で小さく始められる。
+- <strong>開発初期（1ヶ月目）にStripeアカウント審査・Connect利用申請を開始</strong>すること（審査リードタイムがクリティカルパスに乗り得るため）。取引スキーム（第10章#5）の確定が遅れると決済実装全体が停滞するため、最優先で確定する。</p>
+<hr />
+<h3 id="2-3-f-006">2-3. リアルタイム在庫管理と売り越し（オーバーセル）防止 （関連要件: F-006）</h3>
+<p><strong>課題の内容</strong>
+- 「今朝獲れたホッケ 10箱」のような<strong>少量・単発の在庫</strong>を複数の発注者が同時に購入しようとすると、単純な「読み取り→減算→書き込み」実装では競合状態（race condition）が発生し、在庫以上に売れてしまう（売り越し）。
+- カートに入れた時点で在庫を確保するか、決済確定時点で確保するかの設計判断も必要。</p>
+<p><strong>放置した場合のリスク</strong>
+- 売り越し発生 → 生産者が発送できない → 発注者への謝罪・返金対応 → <strong>プラットフォームの信頼を初期に毀損</strong>。少量出品が中心の本件では発生確率が高い。
+- 逆に「カート確保が無期限」だと、カゴに入れたまま放置され在庫が塩漬けになり、当日発送商品が売れ残る。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>在庫減算は必ずサーバー側のアトミックな処理で行う</strong>:
+  - Firebase採用時: <strong>Firestoreトランザクション</strong>（Cloud Functions内）で「在庫読み取り→残数チェック→減算→注文作成」を1トランザクションで実行。残数不足なら注文を失敗させ、アプリに「売り切れました」を即時表示。
+  - RDB（Supabase/PostgreSQL）採用時: <code>SELECT ... FOR UPDATE</code> の<strong>行ロック</strong>＋在庫チェックで同等を実現。
+  - いずれの場合も<strong>クライアント側で在庫を減らす実装は絶対にしない</strong>。
+- <strong>カート内確保（在庫の仮押さえ）</strong>:
+  - フェーズ1は<strong>シンプルに「決済確定時に確保」</strong>を推奨（実装が単純で、少量在庫の塩漬けも起きない）。カート画面では「在庫は決済完了まで確保されません」と明示。
+  - 同時アクセスが増える<strong>リリース1.x以降</strong>で、必要なら「<strong>カート投入時に確保＋有効期限（例: 10分、仮置き）で自動解放</strong>」方式へ拡張。期限切れ解放は、<strong>確保レコードに期限フィールドを持たせ、Cloud Scheduler等のスケジュール実行で在庫を戻す補償処理</strong>として実装する（FirestoreのTTLポリシーはドキュメントの削除しかできず、「在庫を戻す」というフィールド更新には使えない点に注意）。
+- 在庫表示は Firestore のリアルタイムリスナーで「残り◯箱」を即時反映し、購入前に売り切れが分かるUXにする。
+- 決済との整合: Stripeの与信（オーソリ）→在庫確保成功→キャプチャ（売上確定）の順にすると、決済だけ成功して在庫がない事故を防げる（推奨）。<strong>オーソリの有効期間（通常7日）と締切〜出荷確定リードタイムの整合検証が必要</strong>であり、決済確定タイミングは要件定義書 第10章の確認事項（決済確定タイミング）の決定に従う（2-2参照）。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- トランザクション実装自体は<strong>+3〜5日</strong>程度。カート仮押さえをリリース1.xに送ることで初期実装を軽くできる。
+- 負荷テスト（同時購入シナリオ）を最低1日は確保することを推奨。</p>
+<hr />
+<h3 id="2-4-ux-f-002f-102f-115">2-4. 高齢者・アナログ層向けUXの技術面 （関連要件: F-002／F-102／F-115）</h3>
+<p><strong>課題の内容</strong>
+- 出品者（漁業者・農業者）には高齢者・スマホ操作に不慣れな層が含まれる。通常のECアプリのUI密度では出品作業が完遂できず、<strong>プラットフォームの生命線である「出品のしやすさ」</strong>が成立しない。</p>
+<p><strong>放置した場合のリスク</strong>
+- 出品者が定着せず商品が並ばない → 発注者も来ない → プラットフォームとして立ち上がらない（最大の事業リスク）。
+- リリース後にUI全面改修が発生し、数週間〜1ヶ月の手戻り。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>出品フローの正規定義（実装レベル）</strong>:
+  - 必須操作は「<strong>①写真を撮る → ②金額（原価）を入れる → ③出品ボタン</strong>」の<strong>3操作</strong>。数量はデフォルト1（変更任意）、温度帯はデフォルト値適用（変更任意）、AI生成・カテゴリ・説明文は任意ステップ。
+  - 1画面1アクション。
+  - 大きなボタン（タップ領域の十分な確保）・大きな文字（端末の文字サイズ設定に追随する実装。Flutterでは<code>textScaler</code>対応）・高コントラスト配色。
+  - 専門用語を排した文言（「出品」→「売りに出す」等はユーザーテストで検証。仮置き）。
+- <strong>音声読み上げ</strong>: iOS VoiceOver / Android TalkBack への対応（Flutterの<code>Semantics</code>ウィジェットで対応可能）。加えて、重要画面には<strong>アプリ独自の読み上げボタン</strong>（OSのText-to-Speechで画面内容を読み上げ）を検討（推奨・要ユーザーテスト検証）。
+- <strong>エラー時の電話サポート導線・オフライン出品継続（F-115）</strong>: エラーダイアログ・失敗画面に必ず「<strong>電話で聞く</strong>」ボタンを常設し、タップで運営サポート窓口に発信（<code>tel:</code>リンク）。エラーコードを口頭で伝えなくても、<strong>サポート側が管理画面から該当ユーザーの直近エラーログを参照できる</strong>仕組み（Crashlytics＋ユーザーID紐付け、カスタムログ）を用意（推奨）。画像のローカルキュー・自動再送によるオフライン出品継続は2-6と一体で実装。
+- <strong>現地ユーザビリティテストの計画（推奨）</strong>:
+  - 開発2ヶ月目に<strong>ペーパープロトタイプ/モックでのテスト（漁港・農家 各2〜3名）</strong>、3ヶ月目に<strong>実機βテスト</strong>の2回を計画。
+  - テスト観点: 出品完遂率、所要時間、つまずき箇所、文言理解度、屋外（直射日光・軍手/濡れた手）での操作性。
+  - クローズドβ自体を「大規模ユーザビリティテスト」と位置づけ、電話サポートで得たつまずきを毎週アプリ改善に反映するループを組む。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- アクセシビリティ対応・大型UIは<strong>最初から作れば追加工数は小さい</strong>（+1週間程度）。後付け改修は高くつくため初期から織り込む。
+- 現地テスト2回で移動費・謝礼＋準備工数（各回2〜4日）。この投資は事業リスク低減効果が最も大きい項目のひとつ。</p>
+<hr />
+<h3 id="2-5-line-f-203f-204">2-5. LINEライクな通知体験の実現 （関連要件: F-203／F-204）</h3>
+<p><strong>課題の内容</strong>
+- 「新商品が出た」「注文が入った」「発送してください」等をLINEのように即時・確実に届けたい。実現手段として (A) アプリのプッシュ通知（FCM/APNs）、(B) LINE公式アカウント（Messaging API）連携の2案がある。</p>
+<p><strong>放置した場合のリスク</strong>
+- 通知が届かない/気づかれないと、<strong>当日発送の締切に生産者が気づかない・発注者が新着を逃す</strong>など、鮮度が命の商材でビジネスが回らない。
+- 最初からLINE連携まで作り込むと、LINEログイン・友だち追加導線・Messaging APIの従量課金・アカウント審査など付帯作業が膨らみ、納期を圧迫。</p>
+<p><strong>解決策・推奨アプローチ</strong></p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>観点</th>
+<th>(A) アプリプッシュ（FCM/APNs）</th>
+<th>(B) LINE Messaging API連携</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>実装コスト</td>
+<td>○ Firebase(FCM)ならアプリと同一基盤で小さい</td>
+<td>△ LINEログイン/ID連携・公式アカウント開設・審査が必要</td>
+</tr>
+<tr>
+<td>到達性</td>
+<td>○ ただしユーザーが通知許可すること、端末の省電力設定の影響あり</td>
+<td>◎ LINEを日常利用する層には既読率が高い傾向</td>
+</tr>
+<tr>
+<td>費用</td>
+<td>◎ FCM自体は無料</td>
+<td>△ 配信通数による従量課金プランあり（最新の料金体系は要確認）</td>
+</tr>
+<tr>
+<td>高齢者親和性</td>
+<td>△ アプリ通知に不慣れな層がいる</td>
+<td>◎ 「LINEなら見る」層に強い</td>
+</tr>
+<tr>
+<td>制御性</td>
+<td>◎ アプリ内画面へ直接遷移可能</td>
+<td>○ リンク経由</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p><strong>本項の通知方式（フェーズ1はFCMに一本化、LINE連携はリリース1.x）は、要件定義書 第10章#8（LINE連携の実装方式）への「回答案（推奨）」</strong>です。方式の最終確定は第10章#8の回答をもって行います。</p>
+</blockquote>
+<ul>
+<li><strong>フェーズ1（〜リリース）: アプリプッシュ（FCM）に一本化</strong>（推奨）。</li>
+<li>初回起動時に「通知を受け取らないと注文に気づけません」と<strong>目的を説明してから通知許可を取る</strong>（許可率対策。要件 F-114 のプレパーミッション導線）。</li>
+<li>通知トピック設計（新着商品/注文/発送依頼/運営お知らせ）と、Cloud Functionsからのイベント駆動配信。</li>
+<li>電話・SMSを最終フォールバックにする運用（注文後◯時間未読なら運営が電話。仮置き）。</li>
+<li><strong>リリース1.x: LINE公式アカウント連携を追加</strong>（段階案・推奨）。</li>
+<li>用途を「新着商品のお知らせ」「アプリ未読時の重要通知の再送」に絞れば費用を抑制できる。</li>
+<li>LINEログインによるID連携でアプリユーザーとLINEユーザーを紐付け。</li>
+<li>将来、市町村・道の駅テナント（後述2-11。事業フェーズ2）ごとの公式アカウント運用も選択肢。</li>
+</ul>
+<p><strong>スケジュール・コストへの影響</strong>
+- フェーズ1のFCM実装は<strong>1週間前後</strong>。LINE連携をリリース1.xに送ることで、初期リリースから<strong>2〜3週間分の作業を除外</strong>できる。
+- LINE連携時は公式アカウント開設・審査・従量費用が追加（リリース1.x予算として計上）。</p>
+<hr />
+<h3 id="2-6-f-010f-002f-115">2-6. 漁港・農村部の通信環境での写真アップロード （関連要件: F-010／F-002／F-115）</h3>
+<p><strong>課題の内容</strong>
+- 出品の起点は「現場で写真を撮る」こと。しかし漁港・農村部・船上は電波が弱い/不安定な場所があり、数MBの写真アップロードが失敗・タイムアウトしやすい。</p>
+<p><strong>放置した場合のリスク</strong>
+- 「アップロードが終わらない」「途中で消えた」体験が続くと、アナログ層は<strong>一度の失敗でアプリを使わなくなる</strong>。出品数の減少に直結。
+- 失敗時の再操作（撮り直し・入力し直し）が発生すると、最少タップ設計が台無しになる。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>クライアント側で画像圧縮</strong>: 撮影画像をアップロード前にリサイズ・圧縮（例: 長辺1600px・数百KB程度に圧縮。数値は仮置きで画質検証の上決定）。商品一覧用サムネイルはサーバー側（Cloud Functions/拡張機能）で自動生成。
+- <strong>オフライン時のキューイングと自動リトライ（F-115）</strong>:
+  - 出品データ（テキスト）はFirestoreの<strong>オフライン永続化</strong>により、電波が戻り次第自動同期。
+  - 画像はローカルキューに保存し、接続回復を検知して<strong>自動リトライ</strong>（指数バックオフ）。Firebase Storageの<strong>再開可能アップロード</strong>を利用し、途中から再開。
+  - ユーザーには「電波が弱いため、つながったら自動で出品されます」と明示し、<strong>「あとで自動送信」を正常系として見せる</strong>（エラー扱いにしない）。
+- <strong>進捗表示</strong>: アップロード中は進捗バー＋「送信中… ◯%」を大きく表示。完了時は音・バイブ等での明確なフィードバック（推奨・ユーザーテストで検証）。
+- 現地テスト（2-4）で実際の漁港の電波状況での送信試験を必ず実施。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- 圧縮＋進捗表示は<strong>3〜5日</strong>。オフラインキュー＋自動リトライは<strong>+1〜2週間</strong>の追加実装だが、本件のコアバリューに直結するため<strong>フェーズ1に含めることを推奨</strong>。
+- 通信量削減により、ユーザーの通信費・Storage/転送コストも低減。</p>
+<hr />
+<h3 id="2-7-ai-f-008f-009">2-7. AI商品説明・タイトル自動生成 （関連要件: F-008／F-009）</h3>
+<p><strong>課題の内容</strong>
+- 「写真を撮るだけで商品タイトル・説明文ができる」体験を、Vision対応LLM（Claude API等）で実現したい。ただし、(a) 魚種・品種の誤認識、(b) 産地・鮮度・重量など<strong>写真から分からない情報の捏造（ハルシネーション）</strong>、(c) API従量コストの3点が課題。
+- <strong>本機能（F-008/F-009）はShould（フォールバック前提のフェーズ1目標）</strong>であり、出品フロー上は<strong>任意ステップ</strong>（2-4／D16の正規定義参照）。工数遅延時はリリース1.xへ繰り延べ可とする。</p>
+<p><strong>放置した場合のリスク</strong>
+- 誤った魚種名・品種名・効能表示等がそのまま公開されると、発注者トラブル、景品表示法・食品表示関連の問題（<strong>該当性は専門家確認が必要</strong>）、生産者の信頼失墜につながる。
+- コスト無計画だと、出品数増加時にAPI費用が予算を超過。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>人による確認を必須にしたフロー（推奨）</strong>:
+  1. 写真撮影 → 2. AIがタイトル・説明文の<strong>下書き</strong>を生成（<strong>任意ステップ</strong>）→ 3. <strong>出品者が確認・修正して出品</strong>（「これで合っていますか？」を大きなUIで確認）→ 4. 必要に応じて管理者が管理画面で事後チェック。
+  - AI出力はあくまで下書きであり、<strong>確定情報として自動公開しない</strong>ことを設計原則とする。
+  - AI下書きを使わない場合でも出品を完遂できるよう、<strong>手入力＋定型テンプレートへ縮退できる設計</strong>を必須とする。
+- <strong>誤認識・捏造対策（プロンプト/システム設計）</strong>:
+  - 魚種・品目は<strong>プラットフォーム側で用意した選択肢（マスタ）から出品者が選ぶ/確認する</strong>方式にし、AIは「候補の提示」に留める。
+  - 産地・重量・獲れた日など写真から判別できない項目は、AIに書かせず<strong>入力フォームの値を差し込む</strong>（テンプレート合成）。プロンプトで「不明な情報は書かない」ことを明示。
+  - 健康効能などの表現は生成対象から除外するガードを入れる（景表法・薬機法観点。<strong>専門家確認推奨</strong>）。
+- <strong>コスト試算の考え方</strong>（単価は変動するため計算式で管理）:
+  - <code>月間コスト ≒ 月間出品数 × 1出品あたりAPI呼び出し回数 × (入力トークン単価 × 画像+プロンプトのトークン数 + 出力トークン単価 × 生成文トークン数)</code>
+  - 画像1枚＋短い説明文生成であれば1出品あたり数円〜十数円オーダーに収まる想定（仮置き。モデル・画像解像度で変動するため、開発初期に実測して単価表を作る）。月間数千出品規模でも月数万円オーダーが目安であり、事業インパクトに対して十分安価と見込む。
+  - 軽量モデル（Haiku級）で十分な品質が出るかをまず検証し、必要な場合のみ上位モデルを使う段階制御でコスト最適化。
+- 生成結果とユーザー修正の差分をログに残し、プロンプト改善に活用（推奨）。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- Cloud Functions経由のAPI連携＋確認UIで<strong>1〜2週間</strong>。APIキーはサーバー側にのみ保持（アプリに埋め込まない）。
+- 品質チューニング（北海道の魚種・農産物での検証）に<strong>+1週間</strong>を確保推奨。AI機能は<strong>Should（フォールバック前提のフェーズ1目標）</strong>であり、精度が間に合わない品目は「手入力＋定型テンプレート」へフォールバックできる設計にして納期リスクを遮断。工数遅延時はリリース1.xへ繰り延べ可。</p>
+<hr />
+<h3 id="2-8-f-103">2-8. 締切時間管理と当日発送ロジック （関連要件: F-103）</h3>
+<p><strong>課題の内容</strong>
+- 「◯時までの注文は当日発送」という締切ルールを商品/出品者ごとに持ち、締切を過ぎた商品の<strong>自動非公開または翌日発送扱いへの切替</strong>を正確に行う必要がある。端末の時計は改変・ズレがあり得るため、判定基準の設計が重要。</p>
+<p><strong>放置した場合のリスク</strong>
+- 端末時刻で判定すると、時計がずれた端末から締切後の「当日発送」注文が成立し、<strong>発送できない注文</strong>が生まれる。生産者・発注者双方のトラブルに直結。
+- 締切切替が画面表示だけ（サーバー側で未検証）だと、古い画面を開いたままのユーザーから締切後注文が通る。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>判定はすべてサーバー時刻基準</strong>:
+  - 注文確定処理（Cloud Functions）内で、サーバー時刻と商品の締切時刻を比較し、締切超過なら「当日発送としては受付不可（翌日扱いに切替 or 注文不可）」を返す。<strong>アプリ側の表示はあくまで補助</strong>とし、最終判定はサーバーで行う。
+  - タイムゾーンは Asia/Tokyo に固定（内部保存はUTC、表示・判定時に変換。推奨）。
+- <strong>締切による自動状態遷移</strong>:
+  - Cloud Scheduler（cron）で定期実行し、締切を過ぎた商品を「非公開」または「翌日発送扱い」に一括更新。加えて注文時のリアルタイム判定（上記）で定期実行の隙間もカバーする<strong>二段構え</strong>。
+  - 「翌日扱い」に切り替えるか「非公開」にするかは商品ごとに出品者が選べる設計を推奨（鮮魚は非公開、貯蔵可能な農産物は翌日扱い、など。仮置き）。
+- 締切間際の通知（例: 締切30分前に出品者へ「注文◯件、そろそろ準備を」）をFCMで配信（推奨）。
+- 例外運用（時化・悪天候で発送不可）に備え、出品者が<strong>ワンタップで「本日発送不可」に切り替え</strong>、注文済み発注者へ自動通知する機能をフェーズ1またはリリース1.x初頭で用意（推奨）。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- スケジューラ＋サーバー判定で<strong>1週間前後</strong>。設計自体は単純だが、<strong>「締切・発送」の業務ルール確定が先行タスク</strong>であり、ルールが揺れると手戻りするため要件確定を急ぐ。</p>
+<hr />
+<h3 id="2-9-f-110f-109f-106f-001f-002">2-9. 配送・物流（クール便・送料設計・送り状） （関連要件: F-110／F-109／F-106／F-001・F-002）</h3>
+<p><strong>課題の内容</strong>
+- 鮮魚は冷蔵・冷凍の<strong>クール便</strong>が必須で、農産物も温度帯・梱包が品質と顧客満足を直接左右する。「何を・どの温度帯で・いくらの送料で・どうやって送るか」が決まらないと、価格・手数料・決済の計算も、当日発送（2-8）の運用も成立しない。
+- 北海道発・本州向けは送料が高額になりやすく、<strong>送料の設計（商品ごと固定／サイズ×地域テーブル／送料込み価格）</strong>が購入率と生産者の手取りを大きく左右する。離島・一部地域は配送不可・日数超過の考慮も必要。
+- 送り状の発行: 高齢の出品者が<strong>発注者の住所を正確に転記して手書きできるか</strong>、集荷か営業所持ち込みか、といった現場運用の設計が必要。</p>
+<p><strong>放置した場合のリスク</strong>
+- 送料の持ち方を決めずに決済を実装すると、価格表示・手数料計算・返金処理の<strong>全体に手戻り</strong>が波及する（決済と並ぶ作り直しコストの高い領域）。
+- 送り状運用が確立しないと、締切ロジックが完璧でも<strong>当日発送が物理的に回らない</strong>。転記ミスによる誤配送は発注者・出品者双方の信頼を毀損する。
+- 温度帯の指定・表示がないと「常温で送られた鮮魚」のような品質事故が起き、初期のプラットフォーム信頼を失う。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>温度帯・梱包（温度帯選択はフェーズ1必須、梱包は運用で担保）</strong>:
+  - システムは出品時に<strong>温度帯（冷凍/冷蔵/常温）の選択を必須</strong>とする（要件 F-001／F-002）。追加タップを最小化するため、<strong>3択の大ボタン＋テンプレート・前回値からのデフォルト適用で追加タップ原則ゼロ</strong>とし、最短出品フロー（2-4）と両立させる。温度帯は商品ページ・注文情報・出品者向け発送指示に明示する。
+  - 適切な梱包資材・保冷方法は<strong>出品者側の遵守事項</strong>として出品ガイドライン・利用規約で担保（2-12の食品衛生の切り分けと同じ整理。<strong>規約内容は専門家確認推奨</strong>）。
+- <strong>送料の設計（業務ルールの先行確定が必須。第10章#1）</strong>:
+  - フェーズ1は「<strong>商品ごとに出品者が設定する固定送料</strong>」または「<strong>サイズ帯×配送地域の簡易テーブル</strong>」のいずれかを推奨（仮置き。出品操作の単純さを優先するなら前者。送料方式＝商品ごと固定／サイズ×地域テーブルは第10章#1の確定に従う）。「送料込み価格」も高齢出品者には分かりやすい選択肢。
+  - 送料は決済金額に含めてStripeに乗せる（要件 F-110）。<strong>送料をプラットフォーム手数料の計算対象に含めるか</strong>は業務ルールとして最初に確定する（2-2参照）。
+  - 配送不可地域・離島の扱い（購入ブロック or 追加送料）をルール化し、購入時の住所チェック（F-109）で制御。
+- <strong>送り状（フェーズ1は手書き運用＋転記支援、API連携はリリース1.x）</strong>:
+  - フェーズ1は<strong>手書き（または営業所持ち込み）運用から開始</strong>。アプリ/管理画面が「宛先・品名・温度帯を大きな文字で表示する発送指示画面」「印刷用画面（家族・運営が代行印刷できる）」を提供し、転記ミスを抑止する。
+  - リリース1.xで<strong>ヤマトB2クラウド等の送り状発行システムとのCSV連携→API連携</strong>を段階導入し、送り状の自動発行・追跡番号の自動取り込みへ拡張（拡張ポイントとして注文データに配送業者・追跡番号のフィールドを最初から用意）。
+  - 集荷契約の可否・営業所の場所は地域差が大きいため、クローズドβ対象地域で<strong>配送業者と事前に運用確認</strong>（運営側タスク）。
+- <strong>出荷通知</strong>: 出品者が発送完了をワンタップ登録（＋追跡番号入力は任意から開始）→ 発注者へFCMで「発送されました」を自動通知。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- 温度帯表示＋送料テーブル＋発送指示画面＋出荷通知で<strong>1〜2週間</strong>。送り状API連携をリリース1.xに送ることで初期実装を軽くできる（リリース1.xで<strong>+2〜3週間</strong>目安）。
+- <strong>送料・配送の業務ルール確定は1ヶ月目の必須タスク</strong>（クリティカルパス。第3章参照）。クール便の実勢送料の調査・配送業者との運用確認は開発と並行して運営側で進める。</p>
+<hr />
+<h3 id="2-10-rbac-f-201">2-10. 権限管理・マルチロール（RBAC） （関連要件: F-201）</h3>
+<p><strong>課題の内容</strong>
+- 出品者・発注者・管理者の<strong>3ロール</strong>で機能・データアクセスが異なる。さらに将来、市町村・道の駅などが<strong>テナント（地域単位の売り場・管理主体）</strong>として参加する構想（事業フェーズ2）があるため、初期のデータ設計でマルチテナント拡張の余地を残す必要がある。</p>
+<p><strong>放置した場合のリスク</strong>
+- ロール検証をアプリ側だけで行うと、APIを直接叩かれた際に他人の注文・売上データが読める等の<strong>重大な情報漏えい</strong>につながる。
+- テナント概念を全く考慮せずに作ると、市町村参画時に<strong>データ構造の全面移行</strong>（数週間〜数ヶ月）が発生。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>RBAC設計（フェーズ1）</strong>:
+  - Firebase Authentication の<strong>カスタムクレーム</strong>にロールを付与し、<strong>Firestoreセキュリティルール＋Cloud Functions側の二重検証</strong>でアクセス制御。カスタムクレーム名と日本語ロールの対応は下表のとおり。</p>
+<pre><code>| カスタムクレーム | 日本語ロール |
+|---|---|
+| `admin` | 管理者 |
+| `seller` | 出品者 |
+| `buyer` | 発注者 |
+</code></pre>
+<ul>
+<li>1ユーザーが出品者かつ発注者になり得る（生産者が他の生産者から買う）ため、<strong>データ・認証基盤は複数ロールを保持可能な設計</strong>とする（ロールは排他でなく複数保持可能）。<strong>ただしフェーズ1のUIは、ログイン時のロールに応じた1ロール表示に固定</strong>する（複数ロールの保持は基盤側で担保し、UI上のロール切替はリリース1.x以降）。兼任アカウントの有無は要件定義書 第10章の確認事項。</li>
+<li>管理者権限の操作（商品非公開、ユーザー停止、返金）は必ず監査ログを残す。</li>
+<li><strong>マルチテナント拡張性（将来布石。事業フェーズ2）</strong>:</li>
+<li>フェーズ1から主要データ（ユーザー・商品・注文）に <strong><code>tenantId</code>（初期値は単一運営テナント）を持たせておく</strong>。これだけで将来のテナント分割時の移行コストが激減する（推奨・実装コストほぼゼロ）。</li>
+<li>将来ロールは「テナント管理者（市町村・道の駅）」「プラットフォーム管理者（貴社）」の階層に拡張する想定でクレーム構造を設計（<code>role</code> + <code>tenantId</code> の組）。</li>
+<li>手数料率・締切ルール等を<strong>テナント別設定テーブル</strong>として持てる構造にしておく（フェーズ1は1レコードのみ）。</li>
+</ul>
+<p><strong>スケジュール・コストへの影響</strong>
+- RBAC自体は<strong>1週間前後</strong>。<code>tenantId</code>の布石は<strong>数日以内</strong>の追加で済み、将来の移行数週間分を節約できる費用対効果の高い投資。
+- セキュリティルールのテスト（Firebase Emulator）を必ず実施（+2〜3日）。</p>
+<hr />
+<h3 id="2-11-65f-202">2-11. スケーラビリティ（クローズドβ→一般公開→大規模流通） （関連要件: 非機能6.5（拡張性）／F-202）</h3>
+<p><strong>課題の内容</strong>
+- 初期はクローズドβ（数十〜数百ユーザー想定・仮置き）だが、将来は一般公開、さらに<strong>数百億円規模の流通額</strong>を目指す構想（事業フェーズ2）。最初から大規模設計をすると3〜4ヶ月納期が破綻し、逆に何も考えないと成長時に作り直しになる。</p>
+<p><strong>放置した場合のリスク</strong>
+- 過剰設計: マイクロサービス化・自前インフラ等に初期から手を出し、納期超過・運用負荷で少人数体制が崩壊。
+- 過小設計: 手数料計算・在庫・注文のロジックがアプリに散在し、規模拡大時に<strong>全面リアーキテクチャ</strong>（数ヶ月〜）が必要になる。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>基本方針: 「初期はシンプルに、ただし境界だけ正しく引く」</strong>
+  - Firebase（Firestore + Cloud Functions）はサーバーレスで<strong>自動スケール</strong>するため、β〜一般公開初期（数万ユーザー規模まで）は構成変更なしで耐えられる見込み（アクセスパターンに依存するため負荷テストで確認）。
+- <strong>残しておく拡張ポイント（推奨）</strong>:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>拡張ポイント</th>
+<th>フェーズ1での作り方</th>
+<th>将来の拡張</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ビジネスロジックの置き場所</td>
+<td>手数料計算・在庫・締切判定を<strong>すべてCloud Functionsに集約</strong>（アプリは表示に徹する）</td>
+<td>ロジック層をそのまま別バックエンド（Cloud Run等）へ移設可能</td>
+</tr>
+<tr>
+<td>データモデル</td>
+<td><code>tenantId</code>付与（2-10）、注文・決済・在庫を明確に分離したコレクション設計</td>
+<td>テナント分割・RDB移行時のマッピングが容易</td>
+</tr>
+<tr>
+<td>集計・分析</td>
+<td>Firestore→<strong>BigQuery自動エクスポート</strong>を初期から有効化</td>
+<td>売上分析・帳票・数百億円規模の経営ダッシュボードはBigQuery側で成長</td>
+</tr>
+<tr>
+<td>検索</td>
+<td>フェーズ1はカテゴリ/地域の単純絞り込みのみ</td>
+<td>商品数増加時にAlgolia/Typesense等の全文検索を追加（キーワード検索はリリース1.x。拡張ポイントとしてインデックス設計だけ考慮）</td>
+</tr>
+<tr>
+<td>決済</td>
+<td>Stripe Connect（そのままスケールする）</td>
+<td>大規模化時も原則変更不要。手数料交渉等はビジネス側課題</td>
+</tr>
+<tr>
+<td>配送</td>
+<td>送料テーブル＋追跡番号フィールドの用意（2-9）</td>
+<td>配送業者API連携・複数業者対応をデータ構造変更なしで追加</td>
+</tr>
+<tr>
+<td>画像配信</td>
+<td>Firebase Storage + サムネイル自動生成</td>
+<td>CDN強化はそのまま積み増し可能</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>数百億円規模の段階では、基幹部分（注文・在庫・会計連携）のRDB化やマイクロサービス分割の再評価が必要になるが、それは<strong>事業が証明されてから投資すべき課題</strong>であり、上記の境界設計がその移行コストを最小化する。</li>
+</ul>
+<p><strong>スケジュール・コストへの影響</strong>
+- 「ロジックのサーバー集約」「tenantId」「BigQueryエクスポート」はいずれも初期工数<strong>数日〜1週間</strong>の範囲で、納期への影響は軽微。
+- インフラ費用はβ期間は月数千円〜数万円オーダー（従量課金・仮置き）で開始できる見込み。</p>
+<hr />
+<h3 id="2-12-f-104f-113f-20864">2-12. セキュリティ・コンプライアンス （関連要件: F-104／F-113／F-208／非機能6.4）</h3>
+<p><strong>課題の内容</strong>
+- カード情報の取り扱い（PCI DSS）、個人情報保護、特定商取引法の表記、食品表示・消費税/インボイス制度への対応など、ECプラットフォームとして満たすべき要件が多岐にわたる。少人数・短納期で「システムで担う範囲」と「運用・規約で担う範囲」を切り分ける必要がある。</p>
+<p><strong>放置した場合のリスク</strong>
+- カード情報を自社サーバーで触る設計にすると、PCI DSSの重い監査対象となり、少人数体制では現実的に維持不能。漏えい時は事業存続に関わる。
+- 特商法表記・個人情報の取り扱い不備は行政指導・ストア審査リジェクトの対象になり得る。
+- 食品表示やインボイスを「システムで全部やる」と誤って約束すると、開発範囲が際限なく膨張。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>カード情報: Stripeに完全委譲（推奨）</strong>
+  - StripeのSDK/Elements等を用い、カード番号が<strong>自社サーバー・自社DBを一切経由しない</strong>構成にする。これによりPCI DSS対応は最も軽い自己問診（<strong>SAQ A相当</strong>）で済む整理が一般的（<strong>最終的な該当区分はStripeのガイダンスおよび必要に応じて専門家確認</strong>）。カード番号をログ・DBに保存しない実装レビューを必須化。
+- <strong>個人情報保護</strong>:
+  - 収集項目を最小化（氏名・住所・電話・メール等の必要最小限）。プライバシーポリシー整備、Firestoreセキュリティルールでの本人以外アクセス遮断、管理画面の操作ログ。出品者の口座・本人確認情報は<strong>Stripe側にのみ保持</strong>させ、自社では持たない。
+  - 個人情報保護法上の義務（安全管理措置・委託管理等）の詳細は<strong>専門家確認を推奨</strong>。
+- <strong>特定商取引法</strong>:
+  - マーケットプレイスでは<strong>販売者＝各出品者</strong>となるのが一般的な整理のため、出品者ごとの特商法相当の表示（氏名・所在地・連絡先等）をプロフィールとして表示できる仕組みをシステムで用意。個人生産者の住所表示の扱い等、<strong>表記の要否・省略可否は弁護士確認が必要</strong>（買取再販モデルを採る場合は運営が販売者となる点にも留意）。
+- <strong>食品表示・衛生関連（システム外運用と切り分け）</strong>:
+  - 食品表示法・営業許可（魚介類販売業等の要否）は<strong>出品者側の遵守事項</strong>として利用規約・出品ガイドラインで担保し、システムは「表示項目の入力欄・注意喚起・運営審査フロー」を提供する役割に留める（推奨の切り分け。<strong>要件の詳細は行政・専門家確認が必要</strong>）。
+- <strong>消費税・インボイス制度</strong>:
+  - 軽減税率・総額表示・税区分を持ったデータ設計はフェーズ1から必須（詳細は2-2）。
+  - インボイスはフェーズ1では「登録番号をプロフィールに入力・表示できる」＋「<strong>税率区分・税額を含む</strong>取引明細をCSV出力できる（F-208。Mustとしてフェーズ1で提供）」程度に留め、適格請求書の自動発行等の本格対応はリリース1.x以降で税理士と要件を詰める（推奨。<strong>制度対応の要否・方式は税理士確認が必要</strong>）。
+- <strong>その他基本対策</strong>: 通信は全てTLS、APIキー・シークレットはサーバー側管理（Secret Manager）、依存ライブラリの脆弱性チェック、管理画面は2要素認証（推奨）。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- Stripe委譲構成なら決済セキュリティの追加工数はほぼゼロ（設計原則の遵守のみ）。
+- 規約・ポリシー・特商法表記の<strong>法務レビュー費用</strong>（外部専門家）を予算計上。ドラフト作成をリリース6週間前までに開始（ストア審査でプライバシーポリシーURL等が必要なため）。</p>
+<hr />
+<h3 id="2-13-f-10763">2-13. バックアップ・障害復旧・決済データ整合性 （関連要件: F-107／非機能6.3（可用性））</h3>
+<p><strong>課題の内容</strong>
+- 決済・注文データを扱うサービスとして、(a) データ消失への備え（バックアップ）、(b) 管理者の誤操作からの復旧、(c) <strong>Stripe側の決済とFirestore側の注文の不整合</strong>（Webhookの取りこぼし・二重配信）への備えが必要。監視（Crashlytics等）だけではこれらはカバーできない。</p>
+<p><strong>放置した場合のリスク</strong>
+- 誤操作・不具合によるデータ消失時に復旧手段がなく、<strong>注文・売上記録の喪失＝生産者への分配トラブル</strong>に直結。事業とプラットフォームの信頼を根本から毀損する。
+- Webhook取りこぼしにより「決済は成功しているのに注文が確定していない（またはその逆）」状態が発見されないまま蓄積し、返金・分配の突合が人手で不可能になる。</p>
+<p><strong>解決策・推奨アプローチ</strong>
+- <strong>バックアップ方針（フェーズ1から有効化・推奨）</strong>:
+  - Firestoreの<strong>ポイントインタイムリカバリ（PITR）を有効化</strong>＋<strong>日次のスケジュールバックアップ</strong>（エクスポート）を設定。Cloud Storage上の商品画像も消失時に再アップロード困難なため、バックアップ対象に含める。
+  - 復旧目標は仮置きで <strong>RPO: 24時間以内（PITRにより実質的にはより短い）／RTO: 半日以内</strong> とし、β開始前に<strong>リストア手順の実試験</strong>を1回実施する（バックアップは「復元できて初めて意味がある」ため）。
+- <strong>誤操作対策</strong>:
+  - 商品・ユーザー等の削除は<strong>論理削除</strong>（物理削除しない）を原則とし、管理者の一括操作（一括非公開等）には確認ダイアログ＋監査ログ（2-10）＋管理画面からの取り消し手段を用意。
+- <strong>決済と注文の整合性（Stripe Webhook設計）</strong>:
+  - Webhookハンドラは<strong>べき等</strong>に実装（StripeのイベントIDで重複処理を排除）。Stripe側のリトライを前提に、処理失敗時は再送で回復する設計とする。
+  - それでも取りこぼしは起こり得るため、<strong>日次の突合バッチ</strong>（Stripe APIから決済一覧を取得し、Firestoreの注文と突合。不整合を検知したら運営へアラート）をCloud Schedulerで実行。返金・分配額の検算もこのバッチに載せる。</p>
+<p><strong>スケジュール・コストへの影響</strong>
+- PITR/バックアップ設定は<strong>1〜2日</strong>、べき等Webhook＋日次突合バッチは<strong>3〜5日</strong>程度。いずれも小さな投資で「決済を扱うサービスとしての最低限の保険」になるため、<strong>フェーズ1に含めることを推奨</strong>。
+- バックアップ保管のストレージ費用は軽微（従量・仮置き）。</p>
+<hr />
+<h2 id="3">3. スケジュールリスクと対策のまとめ</h2>
+<blockquote>
+<p><strong>本章の用語</strong>: 「フェーズ1」＝今回開発（3〜4ヶ月）。「リリース1.x」＝フェーズ1完了後の機能拡充（要件定義書3.2「リリース1.x候補」と対応）。「（事業）フェーズ2」＝道の駅・温泉施設への商材拡大や市町村・自治体横展開等の事業拡大。</p>
+</blockquote>
+<h3 id="31-34">3.1 3〜4ヶ月で実現するためのスコープ整理（推奨案）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>区分</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>フェーズ1に必ず入れる（コア）</strong></td>
+<td>出品（写真＋金額。AI下書きは任意ステップ・Should）、購入・決済（Stripe Connect・加算モデルによる税率区分＋税込総額表示）、在庫のサーバー側トランザクション、締切・当日発送のサーバー判定、温度帯選択（デフォルト適用）＋送料設定＋発送指示画面＋出荷通知、FCMプッシュ通知、3ロールRBAC（＋tenantId布石）、画像圧縮＋オフラインキュー、電話サポート導線、アプリ内アカウント削除・規約同意・通知許諾（ストア審査必須）、税率区分・税額を含む取引明細CSV出力、バックアップ（PITR）＋Webhookべき等・日次突合、TestFlight/内部テスト配布</td>
+</tr>
+<tr>
+<td><strong>削る・簡略化する</strong></td>
+<td>カート仮押さえ（決済時確保で開始）、送り状（手書き運用＋印刷用画面のみ。API連携なし）、全文検索（カテゴリ絞り込みのみ）、レビュー・お気に入り等のコミュニティ機能、複雑なクーポン/ポイント、帳票の自動生成（税区分付きCSV出力で代替）</td>
+</tr>
+<tr>
+<td><strong>リリース1.x（フェーズ1完了後の機能拡充）に後回し</strong></td>
+<td>LINE公式アカウント連携、配送業者API連携（ヤマトB2クラウド等の送り状発行・追跡自動取込）、インボイス本格対応（適格請求書の自動発行）、高度な売上分析ダッシュボード（拡充）、出品者売上確認画面（S-10）、キーワード検索、通知一覧タブ、カート投入時の在庫確保（同時アクセス増加時）、Web購入画面（アプリ優先）、多言語対応</td>
+</tr>
+<tr>
+<td><strong>事業フェーズ2以降（事業拡大）</strong></td>
+<td>市町村・道の駅テナント機能の実装（布石のみ先行）、道の駅・温泉施設等への商材拡大、自治体横展開・数百億円規模GMVを見据えたスケール</td>
+</tr>
+</tbody>
+</table></div>
+<blockquote>
+<p>リリース1.x・事業フェーズ2に回す項目は「やらない」のではなく、<strong>2章で述べた拡張ポイント（tenantId、ロジックのサーバー集約、追跡番号フィールド、BigQueryエクスポート等）により低コストで追加できる状態</strong>を作っておくのが本提案の骨子です。</p>
+</blockquote>
+<h3 id="32">3.2 クリティカルパス（納期を直接左右する項目）</h3>
+<ol>
+<li><strong>各種アカウント・審査系の前倒し（開発と並行できない待ち時間）</strong>
+   - Apple Developer / Google Play Console の<strong>法人アカウント</strong>取得（D-U-N-S等）→ <strong>契約直後・1週目に着手</strong>
+   - Stripeアカウント＋Connect利用申請・審査 → <strong>1ヶ月目前半に着手</strong>
+   - TestFlight外部テストの初回Beta App Review → <strong>最小ビルドで2ヶ月目前半までに通す</strong>（招待制ログイン採用時は審査用デモアカウントも準備）</li>
+<li><strong>取引スキームの確定（第10章#5）と決済（Stripe Connect）・在庫トランザクション</strong>: 取引スキーム（買取再販／仲介）と決済まわりは作り直しが最も高くつく領域。スキーム確定と設計レビューを1ヶ月目に完了させる。</li>
+<li><strong>業務ルールの確定</strong>: 手数料率（送料を対象に含めるか含む）、<strong>送料・配送ルール（送料の持ち方・温度帯・配送不可地域）</strong>、締切・翌日扱いルール、返金・キャンセル規定、<strong>決済確定タイミング（即時 or オーソリ→キャプチャ／オーソリ7日とリードタイムの整合）</strong>、出品審査の有無、<strong>税率区分の判定基準（税理士確認）</strong>。<strong>実装より先に決める</strong>（2ヶ月目に入っても未確定なら、その部分はパラメータ化して仮値で進める判断をする）。</li>
+<li><strong>現地ユーザビリティテスト2回</strong>（2ヶ月目・3ヶ月目）: 日程は関係者の都合・天候に左右されるため早期に確保。あわせてβ対象地域の<strong>配送業者との運用確認（集荷可否・クール便実勢送料）</strong>も運営側で並行実施。</li>
+<li><strong>法務・税務レビュー</strong>（規約〔代理受領条項含む〕・プライバシーポリシー・特商法表記・税率/手数料の税務整理）: ストア審査の前提物のため、リリース6週間前までにドラフト着手。</li>
+</ol>
+<h3 id="33-4">3.3 マイルストーン目安（4ヶ月想定・仮置き）</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>時期</th>
+<th>主なマイルストーン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1ヶ月目</td>
+<td>要件・業務ルール確定（取引スキーム・手数料・送料/配送・締切・返金・決済確定タイミング・税率区分）、設計、各種アカウント申請、Stripe Connect検証、開発基盤整備（3.5）、最小ビルドで審査経路を疎通</td>
+</tr>
+<tr>
+<td>2ヶ月目</td>
+<td>出品・購入・決済・在庫のコア実装、プロトタイプで現地テスト①、TestFlight/内部テスト配布開始</td>
+</tr>
+<tr>
+<td>3ヶ月目</td>
+<td>通知・締切ロジック・配送（送料/発送指示/出荷通知）・AI生成（Should）・管理画面、βビルドで現地テスト②、法務レビュー完了</td>
+</tr>
+<tr>
+<td>4ヶ月目</td>
+<td>負荷・同時購入テスト、バックアップのリストア試験、不具合修正、クローズドβ本番開始（QR配布）、ストア本審査（限定公開準備）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="34">3.4 主要リスクと対策一覧</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>リスク</th>
+<th>影響</th>
+<th>対策</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ストア審査リジェクト</td>
+<td>リリース遅延1〜4週間</td>
+<td>最小ビルドで早期に審査経路を疎通、審査バッファ2〜3週間を計画に内蔵、招待制ログイン＋審査用デモアカウントで先行運用、アカウント削除・規約同意・通知許諾（審査必須）をフェーズ1で実装</td>
+</tr>
+<tr>
+<td>取引スキーム・Stripe Connect審査・仕様確認の遅れ</td>
+<td>決済実装の停滞</td>
+<td>取引スキーム（第10章#5）を最優先確定。1ヶ月目に申請・技術検証を完了。並行してモック決済（テストモード）で他機能開発を継続</td>
+</tr>
+<tr>
+<td>高齢者UXの不適合</td>
+<td>出品者が定着しない（事業リスク）</td>
+<td>現地テスト2回＋電話サポート＋β期間中の週次改善ループ</td>
+</tr>
+<tr>
+<td>業務ルール未確定による手戻り</td>
+<td>実装やり直し</td>
+<td>ルールのパラメータ化（手数料率・送料・締切・決済確定タイミング等を設定値に）で決定遅延を吸収</td>
+</tr>
+<tr>
+<td>配送運用の不成立（送り状・集荷・クール便）</td>
+<td>当日発送が回らない・品質事故</td>
+<td>送料/温度帯ルールの1ヶ月目確定、手書き運用＋発送指示画面で開始、β地域で配送業者と事前確認（2-9）</td>
+</tr>
+<tr>
+<td>決済と注文の不整合（Webhook取りこぼし）</td>
+<td>分配・返金トラブル</td>
+<td>べき等Webhook＋日次突合バッチ＋アラート（2-13）</td>
+</tr>
+<tr>
+<td>法規制対応の見落とし</td>
+<td>公開停止・信頼毀損</td>
+<td>資金フロー（代理受領）・特商法・食品表示・消費税/インボイスは<strong>専門家確認を必須プロセス化</strong>（本書の該当箇所参照）</td>
+</tr>
+<tr>
+<td>少人数体制の属人化・離脱</td>
+<td>開発停止</td>
+<td>マネージドサービス最大活用で運用負荷を最小化、設計ドキュメントとIaC的な構成管理を残す</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="35-cicd">3.5 開発基盤（環境分離・テスト・CI/CD）</h3>
+<p>少人数・短納期こそ、手戻りと属人化を防ぐ開発基盤への初期投資が効きます（初期セットアップ合計<strong>1週間弱</strong>・推奨）。</p>
+<ul>
+<li><strong>環境分離</strong>: Firebaseは<strong>本番用・検証用の2プロジェクト</strong>を最初から分離（誤って本番データを壊す事故の防止）。Stripeは<strong>テストモード</strong>で開発・検証し、本番キーは本番環境のみに保持。環境別設定はビルド構成で切り替え。</li>
+<li><strong>自動テスト</strong>: 手戻りコストが最も高い<strong>決済（手数料計算・返金）・在庫トランザクション・締切判定</strong>の3領域に絞ってユニット/結合テストを整備。Firebase Emulator Suite（Firestore・Functions・Auth）でセキュリティルールとサーバーロジックをローカル検証。同時購入の負荷テストシナリオもここに含める（2-3）。</li>
+<li><strong>ビルド・配布の自動化</strong>: fastlane等でiOS/Androidのビルド・署名・TestFlight/内部テストへのアップロードを自動化。<strong>コード署名鍵（Apple証明書、Playアップロード鍵）とApp Store Connect APIキーの管理・バックアップ</strong>は属人化・紛失リスクが高いため、初期にルール化（Secret Manager等での保管）。</li>
+<li><strong>CI</strong>: GitHub Actions等でプッシュごとのテスト実行＋タグでの配布ビルドを自動化（最小構成で十分）。</li>
+</ul>
+<hr />
+<h3 id="_2">付記</h3>
+<ul>
+<li>本書の工数・費用・期間の数値はいずれも概算（仮置き）であり、詳細見積は要件確定後に別途提示します。</li>
+<li>冒頭「0. 本書が前提とする要求事項」の確認結果によっては、本書の課題・解決策・スケジュールを改訂します。</li>
+<li>Stripe・Apple・Google・LINE・配送業者等の外部サービスの仕様・料金・審査基準は変更されることがあるため、<strong>実装着手時点での最新公式ドキュメントの確認</strong>を前提としてください。</li>
+<li>資金決済法・特定商取引法・食品表示法・個人情報保護法・消費税/インボイス制度等に関する記述は法的助言ではありません。<strong>必ず弁護士・税理士等の専門家の確認を経て確定</strong>してください。</li>
+</ul></div></article>
+  </main>
+</div>
+<div class="themetoggle" role="group" aria-label="テーマ切替"><button data-t="light" title="ライト" aria-label="ライト">☀</button><button data-t="auto" title="自動" aria-label="自動">◐</button><button data-t="dark" title="ダーク" aria-label="ダーク">☾</button></div>
+<script>
+(function(){
+  var docs=['overview','requirements','screens','tech'];
+  function setDoc(key){
+    document.querySelectorAll('.navbtn').forEach(function(b){b.classList.toggle('active',b.dataset.doc===key);});
+    document.querySelectorAll('.doc').forEach(function(a){a.hidden=(a.dataset.doc!==key);});
+    document.querySelectorAll('.toc').forEach(function(t){t.hidden=(t.dataset.doc!==key);});
+    var main=document.querySelector('.main');
+    if(main) main.scrollTop=0;
+    window.scrollTo({top:0,behavior:'auto'});
+    try{history.replaceState(null,'', '#'+key);}catch(e){}
+    spy();
+  }
+  document.querySelectorAll('.navbtn').forEach(function(b){
+    b.addEventListener('click',function(){setDoc(b.dataset.doc);});
+  });
+  // cross-doc links in overview
+  document.addEventListener('click',function(e){
+    var a=e.target.closest('a[data-goto]');
+    if(a){e.preventDefault();setDoc(a.dataset.goto);}
+    var t=e.target.closest('.toc a');
+    if(t){var id=t.getAttribute('href').slice(1);var el=document.getElementById(id);
+      if(el){e.preventDefault();el.scrollIntoView({behavior:'smooth',block:'start'});
+        if(window.innerWidth<=900){var d=document.querySelector('.tocwrap');if(d)d.open=false;}}}
+  });
+  // scroll spy
+  var ticking=false;
+  function spy(){
+    var active=document.querySelector('.doc:not([hidden])');
+    var toc=document.querySelector('.toc:not([hidden])');
+    if(!active||!toc)return;
+    var hs=active.querySelectorAll('h2[id],h3[id]');
+    var cur=null,off=120;
+    hs.forEach(function(h){if(h.getBoundingClientRect().top<=off)cur=h.id;});
+    if(!cur&&hs.length)cur=hs[0].id;
+    toc.querySelectorAll('a').forEach(function(a){
+      a.classList.toggle('cur',a.getAttribute('href')==='#'+cur);});
+    var on=toc.querySelector('a.cur');
+    if(on&&on.scrollIntoView){var r=on.getBoundingClientRect();
+      var pr=toc.parentElement.getBoundingClientRect();
+      if(r.top<pr.top||r.bottom>pr.bottom)on.scrollIntoView({block:'nearest'});}
+  }
+  window.addEventListener('scroll',function(){if(!ticking){requestAnimationFrame(function(){spy();ticking=false;});ticking=true;}},{passive:true});
+  // theme toggle
+  var KEY='ec-theme';
+  function applyTheme(v){
+    var root=document.documentElement;
+    if(v==='auto')root.removeAttribute('data-theme');else root.setAttribute('data-theme',v);
+    document.querySelectorAll('.themetoggle button').forEach(function(b){b.classList.toggle('on',b.dataset.t===v);});
+    try{localStorage.setItem(KEY,v);}catch(e){}
+  }
+  document.querySelectorAll('.themetoggle button').forEach(function(b){
+    b.addEventListener('click',function(){applyTheme(b.dataset.t);});
+  });
+  var saved='auto';try{saved=localStorage.getItem(KEY)||'auto';}catch(e){}
+  applyTheme(saved);
+  // initial doc from hash
+  var h=(location.hash||'').slice(1);
+  setDoc(docs.indexOf(h)>=0?h:'overview');
+})();
+</script></body></html>
