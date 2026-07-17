@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+<stop offset="0" stop-color="#a3763c"/><stop offset="1" stop-color="#dbb679"/></linearGradient></defs>
+<rect width="400" height="400" fill="url(#g)"/>
+<circle cx="330" cy="70" r="110" fill="rgba(255,255,255,0.12)"/>
+<circle cx="60" cy="340" r="90" fill="rgba(0,0,0,0.08)"/>
+<text x="200" y="205" font-size="120" text-anchor="middle">🧅</text>
+<text x="200" y="330" font-size="34" font-weight="bold" text-anchor="middle" fill="rgba(255,255,255,0.95)" font-family="Hiragino Sans, sans-serif">玉ねぎ</text>
+</svg>

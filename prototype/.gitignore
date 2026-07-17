@@ -1,0 +1,11 @@
+# dependencies / build
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# local demo database (initial seed is auto-created on first run)
+data/
+
+# user-uploaded photos (demo)
+public/uploads/
