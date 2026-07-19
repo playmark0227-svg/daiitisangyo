@@ -1,4 +1,6 @@
+import { cache } from "react";
 import { db } from "./db";
+import { salePrice } from "./pricing";
 import type {
   Address,
   Category,
@@ -15,7 +17,8 @@ import type {
 
 /* ---------------- settings ---------------- */
 
-export function getSettings(): Settings {
+/** リクエスト内で複数回呼ばれるため React cache でメモ化 */
+export const getSettings = cache((): Settings => {
   const rows = db().prepare("SELECT key, value FROM settings").all() as {
     key: string;
     value: string;
@@ -26,7 +29,7 @@ export function getSettings(): Settings {
     default_deadline: m.default_deadline ?? "13:00",
     service_name: m.service_name ?? "うみさとマルシェ",
   };
-}
+});
 
 export function setSetting(key: keyof Settings, value: string) {
   db()
@@ -39,7 +42,7 @@ export function setSetting(key: keyof Settings, value: string) {
 /** 原価 → 販売価格（マージン加算、10円単位切り上げ）。F-007 加算モデル */
 export function salePriceFromCost(cost: number, marginRate?: number): number {
   const rate = marginRate ?? getSettings().margin_rate;
-  return Math.ceil((cost * (1 + rate / 100)) / 10) * 10;
+  return salePrice(cost, rate);
 }
 
 /* ---------------- deadline (F-103) ---------------- */
@@ -97,7 +100,10 @@ export function registerByInvite(
   const r = db()
     .prepare("INSERT INTO users (name, role, org, phone) VALUES (?,?,?,?)")
     .run(name, inv.role, org, phone);
-  return { ok: true, userId: Number(r.lastInsertRowid) };
+  const userId = Number(r.lastInsertRowid);
+  // 最後に登録した利用者を記録（管理画面で追跡できるように）
+  db().prepare("UPDATE invite_codes SET used_by = ? WHERE code = ?").run(userId, inv.code);
+  return { ok: true, userId };
 }
 
 /* ---------------- categories ---------------- */
@@ -145,6 +151,17 @@ export function getProduct(id: number): Product | null {
   return (db().prepare(`${PRODUCT_SELECT} WHERE p.id = ?`).get(id) as unknown as Product) ?? null;
 }
 
+/** 複数商品の一括取得（カート表示・注文処理のN+1回避） */
+export function getProductsByIds(ids: number[]): Map<number, Product> {
+  const map = new Map<number, Product>();
+  if (ids.length === 0) return map;
+  const rows = db()
+    .prepare(`${PRODUCT_SELECT} WHERE p.id IN (${ids.map(() => "?").join(",")})`)
+    .all(...ids) as unknown as Product[];
+  for (const r of rows) map.set(r.id, r);
+  return map;
+}
+
 export interface ProductInput {
   seller_id: number;
   category_id: number;
@@ -164,7 +181,7 @@ export interface ProductInput {
 /** 出品（リアルタイム出品 F-002 / 定期テンプレ F-001）。販売価格はサーバー側で自動計算 */
 export function createProduct(input: ProductInput): number {
   const s = getSettings();
-  const sale = salePriceFromCost(input.cost_price);
+  const sale = salePriceFromCost(input.cost_price, s.margin_rate);
   const r = db()
     .prepare(
       `INSERT INTO products
@@ -252,13 +269,17 @@ export function publishFromTemplate(templateId: number, sellerId: number, qty: n
 
 export interface CheckoutResult {
   ok: boolean;
-  orderId?: number;
+  orderIds?: number[];
   error?: string;
 }
 
 /**
  * 注文確定。在庫チェック→減算→注文作成を単一トランザクションで実行し、
  * 売り越し（オーバーセル）を防止する（F-006）。
+ *
+ * 注文は出品者ごとに分割して作成する（1出品者=1注文）。これにより
+ * 各出品者が自分の注文だけを独立して発送/欠品処理でき、複数出品者の
+ * 商品を1回のカートで買っても状態が混線しない（Stripe Connectの送金単位とも一致）。
  */
 export function placeOrder(
   buyerId: number,
@@ -269,12 +290,13 @@ export function placeOrder(
   const d = db();
   try {
     d.exec("BEGIN IMMEDIATE");
-    let itemsTotal = 0;
-    const sellerFees = new Map<number, number>(); // seller -> max shipping fee（出品者ごとに1梱包と仮定）
-    const resolved: { p: Product; qty: number }[] = [];
+    // トランザクション内で一括取得（在庫チェックと同一スナップショット）
+    const products = getProductsByIds(lines.map((l) => l.productId));
+    // 出品者ごとに明細をまとめる
+    const bySeller = new Map<number, { p: Product; qty: number }[]>();
 
     for (const line of lines) {
-      const p = getProduct(line.productId);
+      const p = products.get(line.productId);
       if (!p || !p.is_public || p.is_template) {
         d.exec("ROLLBACK");
         return { ok: false, error: "取り扱いが終了した商品がカートに含まれています。" };
@@ -295,35 +317,39 @@ export function placeOrder(
         d.exec("ROLLBACK");
         return { ok: false, error: `「${p.title}」は先ほど売り切れました。` };
       }
-      itemsTotal += p.sale_price * line.qty;
-      sellerFees.set(p.seller_id, Math.max(sellerFees.get(p.seller_id) ?? 0, p.shipping_fee));
-      resolved.push({ p, qty: line.qty });
+      const group = bySeller.get(p.seller_id) ?? [];
+      group.push({ p, qty: line.qty });
+      bySeller.set(p.seller_id, group);
     }
 
-    const shippingTotal = [...sellerFees.values()].reduce((a, b) => a + b, 0);
-    const grand = itemsTotal + shippingTotal;
-
-    const or = d
-      .prepare(
-        `INSERT INTO orders (buyer_id, status, items_total, shipping_total, grand_total, address, address_label)
-         VALUES (?,?,?,?,?,?,?)`
-      )
-      .run(buyerId, "paid", itemsTotal, shippingTotal, grand, address.address, address.label);
-    const orderId = Number(or.lastInsertRowid);
-
+    const insOrder = d.prepare(
+      `INSERT INTO orders (buyer_id, status, items_total, shipping_total, grand_total, address, address_label)
+       VALUES (?,?,?,?,?,?,?)`
+    );
     const insItem = d.prepare(
       `INSERT INTO order_items (order_id, product_id, seller_id, title, photo, temp_zone, qty, unit_price, unit_cost)
        VALUES (?,?,?,?,?,?,?,?,?)`
     );
-    for (const { p, qty } of resolved) {
-      insItem.run(orderId, p.id, p.seller_id, p.title, p.photo, p.temp_zone, qty, p.sale_price, p.cost_price);
+
+    const created: { sellerId: number; orderId: number }[] = [];
+    for (const [sellerId, group] of bySeller) {
+      const itemsTotal = group.reduce((s, { p, qty }) => s + p.sale_price * qty, 0);
+      const shipping = group.reduce((m, { p }) => Math.max(m, p.shipping_fee), 0); // 出品者ごとに1梱包
+      const grand = itemsTotal + shipping;
+      const or = insOrder.run(buyerId, "paid", itemsTotal, shipping, grand, address.address, address.label);
+      const orderId = Number(or.lastInsertRowid);
+      for (const { p, qty } of group) {
+        insItem.run(orderId, p.id, p.seller_id, p.title, p.photo, p.temp_zone, qty, p.sale_price, p.cost_price);
+      }
+      created.push({ sellerId, orderId });
     }
     d.exec("COMMIT");
 
-    for (const sellerId of sellerFees.keys()) {
+    // 通知はトランザクション外で（出品者ごとに自分の注文へ）
+    for (const { sellerId, orderId } of created) {
       notifyUser(sellerId, "new_order", `新しい注文が入りました（注文 #${orderId}）`, `/sell/orders/${orderId}`);
     }
-    return { ok: true, orderId };
+    return { ok: true, orderIds: created.map((c) => c.orderId) };
   } catch (e) {
     try {
       d.exec("ROLLBACK");
@@ -371,48 +397,74 @@ export function listSellerOrders(sellerId: number): (Order & { my_qty: number; m
     .all(sellerId) as unknown as (Order & { my_qty: number; my_total: number })[];
 }
 
-export function listAllOrders(): Order[] {
+export function listAllOrders(limit?: number): Order[] {
+  const base = `SELECT o.*, u.name AS buyer_name, u.org AS buyer_org
+       FROM orders o JOIN users u ON u.id = o.buyer_id ORDER BY o.id DESC`;
+  const rows = limit
+    ? db().prepare(`${base} LIMIT ?`).all(limit)
+    : db().prepare(base).all();
+  return rows as unknown as Order[];
+}
+
+/** 管理画面の注文一覧用: 商品点数を集約して1クエリで取得（注文ごとのgetOrder N+1を回避） */
+export function listAllOrdersWithCounts(): (Order & { item_count: number })[] {
   return db()
     .prepare(
-      `SELECT o.*, u.name AS buyer_name, u.org AS buyer_org
-       FROM orders o JOIN users u ON u.id = o.buyer_id ORDER BY o.id DESC`
+      `SELECT o.*, u.name AS buyer_name, u.org AS buyer_org,
+              COALESCE(SUM(oi.qty), 0) AS item_count
+       FROM orders o
+       JOIN users u ON u.id = o.buyer_id
+       LEFT JOIN order_items oi ON oi.order_id = o.id
+       GROUP BY o.id ORDER BY o.id DESC`
     )
-    .all() as unknown as Order[];
+    .all() as unknown as (Order & { item_count: number })[];
 }
 
-function setOrderStatus(orderId: number, status: OrderStatus) {
-  db().prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, orderId);
+/** 現在ステータスが期待値のときだけ遷移させる（古い画面からの不正遷移を防ぐ）。成功したらtrue */
+function transitionStatus(orderId: number, from: OrderStatus, to: OrderStatus): boolean {
+  const r = db()
+    .prepare("UPDATE orders SET status = ? WHERE id = ? AND status = ?")
+    .run(to, orderId, from);
+  return Number(r.changes) > 0;
 }
 
-/** 発送済みにする（出品者 S-09） */
+/** 発送済みにする（出品者 S-09）。paid のときだけ遷移可 */
 export function markShipped(orderId: number, sellerId: number) {
   const o = getOrder(orderId);
   if (!o) throw new Error("order not found");
   if (!o.items.some((i) => i.seller_id === sellerId)) throw new Error("not your order");
-  setOrderStatus(orderId, "shipped");
+  if (!transitionStatus(orderId, "paid", "shipped")) throw new Error("invalid transition");
   notifyUser(o.buyer_id, "shipped", `注文 #${orderId} が発送されました`, `/shop/orders/${orderId}`);
 }
 
-/** 欠品キャンセル申請（出品者 → 管理者承認待ち、F-107） */
+/** 欠品キャンセル申請（出品者 → 管理者承認待ち、F-107）。paid のときだけ申請可 */
 export function requestCancel(orderId: number, sellerId: number, reason: string) {
   const o = getOrder(orderId);
   if (!o) throw new Error("order not found");
   if (!o.items.some((i) => i.seller_id === sellerId)) throw new Error("not your order");
-  setOrderStatus(orderId, "cancel_requested");
+  if (!transitionStatus(orderId, "paid", "cancel_requested")) throw new Error("invalid transition");
   notifyRole("admin", "cancel_request", `注文 #${orderId} に欠品キャンセル申請（理由: ${reason}）`, `/admin/orders/${orderId}`);
 }
 
-/** 管理者: キャンセル承認 → 返金（デモ）＋在庫戻し */
+/** 管理者: キャンセル承認 → 返金（デモ）＋在庫戻し。二重返金は在庫が水増しされるため条件付き更新で防ぐ */
 export function approveCancelAndRefund(orderId: number) {
   const o = getOrder(orderId);
   if (!o) throw new Error("order not found");
+  if (o.status === "refunded") return; // 再送・連打対策
   const d = db();
   d.exec("BEGIN IMMEDIATE");
   try {
+    // 先にstatusを条件付きで更新し、勝てた場合のみ在庫を戻す（競合時の二重加算防止）
+    const r = d
+      .prepare("UPDATE orders SET status = 'refunded' WHERE id = ? AND status != 'refunded'")
+      .run(orderId);
+    if (Number(r.changes) === 0) {
+      d.exec("ROLLBACK");
+      return;
+    }
     for (const it of o.items) {
       d.prepare("UPDATE products SET stock = stock + ? WHERE id = ?").run(it.qty, it.product_id);
     }
-    d.prepare("UPDATE orders SET status = 'refunded' WHERE id = ?").run(orderId);
     d.exec("COMMIT");
   } catch (e) {
     d.exec("ROLLBACK");
@@ -440,8 +492,12 @@ export function notifyUser(userId: number, type: string, message: string, link =
 }
 
 export function notifyRole(role: string, type: string, message: string, link = "") {
-  const users = db().prepare("SELECT id FROM users WHERE role = ? AND active = 1").all(role) as unknown as { id: number }[];
-  for (const u of users) notifyUser(u.id, type, message, link);
+  // 1文のINSERT...SELECTで一括作成（対象ユーザー数に比例するループINSERTを回避）
+  db()
+    .prepare(
+      "INSERT INTO notifications (user_id, type, message, link) SELECT id, ?, ?, ? FROM users WHERE role = ? AND active = 1"
+    )
+    .run(type, message, link, role);
 }
 
 export function listNotifications(userId: number, limit = 30): Notification[] {
@@ -473,23 +529,30 @@ export interface DashboardStats {
 
 export function dashboardStats(): DashboardStats {
   const d = db();
+  // 列側に関数を適用せず範囲比較にする（created_atはローカル時刻のTEXT格納なので辞書順比較で正しい）
   const today = d
     .prepare(
       `SELECT COALESCE(SUM(grand_total),0) AS s, COUNT(*) AS c FROM orders
-       WHERE date(created_at) = date('now','localtime') AND status != 'refunded'`
+       WHERE created_at >= date('now','localtime')
+         AND created_at < date('now','localtime','+1 day')
+         AND status != 'refunded'`
     )
     .get() as unknown as { s: number; c: number };
   const month = d
     .prepare(
       `SELECT COALESCE(SUM(grand_total),0) AS s, COUNT(*) AS c FROM orders
-       WHERE strftime('%Y-%m', created_at) = strftime('%Y-%m','now','localtime') AND status != 'refunded'`
+       WHERE created_at >= date('now','localtime','start of month')
+         AND created_at < date('now','localtime','start of month','+1 month')
+         AND status != 'refunded'`
     )
     .get() as unknown as { s: number; c: number };
   const margin = d
     .prepare(
       `SELECT COALESCE(SUM((oi.unit_price - oi.unit_cost) * oi.qty),0) AS m
        FROM order_items oi JOIN orders o ON o.id = oi.order_id
-       WHERE strftime('%Y-%m', o.created_at) = strftime('%Y-%m','now','localtime') AND o.status != 'refunded'`
+       WHERE o.created_at >= date('now','localtime','start of month')
+         AND o.created_at < date('now','localtime','start of month','+1 month')
+         AND o.status != 'refunded'`
     )
     .get() as unknown as { m: number };
   const products = d
@@ -502,7 +565,7 @@ export function dashboardStats(): DashboardStats {
     monthOrders: month.c,
     monthMargin: margin.m,
     publicProducts: products.c,
-    recentOrders: listAllOrders().slice(0, 8),
+    recentOrders: listAllOrders(8),
   };
 }
 
@@ -527,7 +590,12 @@ export function ordersCsv(): string {
     const margin = (price - cost) * qty;
     const taxRate = "8%(軽減)";
     const tax = Math.floor((price * qty * 8) / 108);
-    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    // フォーミュラ(CSV)インジェクション対策: =+-@等で始まるセルはクオート接頭辞で無害化
+    const esc = (v: string | number) => {
+      const s = String(v);
+      const safe = /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
     return [r.order_id, r.created_at, r.status, esc(String(r.buyer)), esc(String(r.seller)), esc(String(r.title)), qty, price, cost, margin, taxRate, tax].join(",");
   });
   return "﻿" + [header, ...lines].join("\n");

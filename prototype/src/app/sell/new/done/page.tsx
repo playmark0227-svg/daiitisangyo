@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import Badges from "@/components/Badges";
 import AppBar from "@/components/seller/AppBar";
-import Badges from "@/components/seller/Badges";
 import { getProduct } from "@/lib/domain";
+import { yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 export default async function ListingDonePage({
@@ -41,12 +42,12 @@ export default async function ListingDonePage({
               {product.title}
             </div>
             <div className="total-row">
-              <span>お店に出る価格</span>
-              <b>{product.sale_price.toLocaleString("ja-JP")}円</b>
+              <span>お店に出る価格（税込）</span>
+              <b>{yen(product.sale_price)}</b>
             </div>
             <div className="total-row">
               <span>あなたの受取（1つあたり）</span>
-              <b>{product.cost_price.toLocaleString("ja-JP")}円</b>
+              <b>{yen(product.cost_price)}</b>
             </div>
             <div className="total-row">
               <span>数量</span>

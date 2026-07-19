@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Badges from "@/components/Badges";
 import AppBar from "@/components/seller/AppBar";
-import Badges from "@/components/seller/Badges";
 import PublicToggle from "@/components/seller/PublicToggle";
-import { isPastDeadline, listSellerProducts, minutesToDeadline } from "@/lib/domain";
+import { getSettings, isPastDeadline, listSellerProducts, minutesToDeadline } from "@/lib/domain";
+import { yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 function remainLabel(min: number): string {
@@ -18,10 +19,11 @@ export default async function SellHome({
   const { saved } = await searchParams;
   const user = await requireUser("seller");
   const products = listSellerProducts(user.id);
+  const settings = getSettings();
 
   return (
     <>
-      <AppBar title="うみさとマルシェ 出品" />
+      <AppBar title={`${settings.service_name} 出品`} />
       <main className="phone-main">
         {saved === "1" && <div className="ok-box">保存しました。</div>}
 
@@ -59,8 +61,8 @@ export default async function SellHome({
                     <Badges badges={p.badges} temp={p.temp_zone} />
                     <div className="pc-title">{p.title}</div>
                     <div className="pc-price">
-                      {p.sale_price.toLocaleString("ja-JP")}円{" "}
-                      <small>あなたの受取 {p.cost_price.toLocaleString("ja-JP")}円</small>
+                      {yen(p.sale_price)}{" "}
+                      <small>（税込）あなたの受取 {yen(p.cost_price)}</small>
                     </div>
                     <div className="pc-meta">
                       {p.stock === 0 ? (

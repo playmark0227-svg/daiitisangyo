@@ -80,20 +80,20 @@ export default async function LoginPage({
         </div>
         <form action={registerWithInvite} className="card">
           <div className="field">
-            <label>招待コード</label>
-            <input className="input" name="code" placeholder="例: UMI-2026（発注者） / SATO-2026（出品者）" />
+            <label htmlFor="reg-code">招待コード</label>
+            <input id="reg-code" className="input" name="code" placeholder="例: UMI-2026（発注者） / SATO-2026（出品者）" />
           </div>
           <div className="field">
-            <label>お名前</label>
-            <input className="input" name="name" placeholder="山田 太郎" />
+            <label htmlFor="reg-name">お名前</label>
+            <input id="reg-name" className="input" name="name" placeholder="山田 太郎" />
           </div>
           <div className="field">
-            <label>屋号・会社名</label>
-            <input className="input" name="org" placeholder="山田水産" />
+            <label htmlFor="reg-org">屋号・会社名</label>
+            <input id="reg-org" className="input" name="org" placeholder="山田水産" />
           </div>
           <div className="field">
-            <label>電話番号</label>
-            <input className="input" name="phone" inputMode="tel" placeholder="090-0000-0000" />
+            <label htmlFor="reg-phone">電話番号</label>
+            <input id="reg-phone" className="input" name="phone" inputMode="tel" placeholder="090-0000-0000" />
           </div>
           <button className="btn btn-primary btn-block" type="submit">
             登録してはじめる

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { getSettings, unreadCount } from "@/lib/domain";
-import { readCart } from "@/components/buyer/cart-view";
+import { buildCartView, readCart } from "@/components/buyer/cart-view";
 import TabBar from "@/components/buyer/TabBar";
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
@@ -9,7 +9,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   const settings = getSettings();
   const unread = unreadCount(user.id);
   const cart = await readCart();
-  const cartCount = cart.reduce((a, l) => a + l.qty, 0);
+  // 取扱終了・非公開になった行は除外して数える（カート画面の点数と一致させる）
+  const cartCount = buildCartView(cart).count;
 
   return (
     <div className="phone">

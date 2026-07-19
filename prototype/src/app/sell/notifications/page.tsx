@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AppBar from "@/components/seller/AppBar";
 import { listNotifications, markAllRead } from "@/lib/domain";
+import { formatDateTime } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 export default async function SellerNotificationsPage() {
@@ -21,7 +22,7 @@ export default async function SellerNotificationsPage() {
           <div>
             {items.map((n) => (
               <div key={n.id} className={n.read === 0 ? "notif unread" : "notif"}>
-                <span className="n-time">{n.created_at.slice(5, 16)}</span>
+                <span className="n-time">{formatDateTime(n.created_at)}</span>
                 <span className="grow">
                   {n.link ? <Link href={n.link}>{n.message}</Link> : n.message}
                 </span>

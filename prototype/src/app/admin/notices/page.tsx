@@ -16,16 +16,17 @@ export default async function AdminNoticesPage({
 
       <form action={adminSendNotice} className="card" style={{ maxWidth: 560 }}>
         <div className="field">
-          <label>宛先</label>
-          <select className="input" name="target" defaultValue="all">
+          <label htmlFor="target">宛先</label>
+          <select id="target" className="input" name="target" defaultValue="all">
             <option value="buyer">発注者のみ</option>
             <option value="seller">出品者のみ</option>
             <option value="all">全員（発注者＋出品者）</option>
           </select>
         </div>
         <div className="field">
-          <label>メッセージ</label>
+          <label htmlFor="message">メッセージ</label>
           <textarea
+            id="message"
             className="input"
             name="message"
             rows={5}

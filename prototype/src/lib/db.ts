@@ -100,6 +100,13 @@ function migrate(d: DatabaseSync) {
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+  CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read);
+  CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+  CREATE INDEX IF NOT EXISTS idx_order_items_seller ON order_items(seller_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+  CREATE INDEX IF NOT EXISTS idx_products_public ON products(is_public, is_template, category_id);
+  CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id, is_template);
   `);
 }
 
@@ -174,9 +181,14 @@ function seed(d: DatabaseSync) {
     (order_id, product_id, seller_id, title, photo, temp_zone, qty, unit_price, unit_cost)
     VALUES (?,?,?,?,?,?,?,?,?)`);
 
+  // 過去注文が参照する「その日の出品分」（テンプレートから出品された非テンプレ商品を想定）。
+  // テンプレート(id=5,7)を直接参照すると返金時に標準数量へ在庫が戻ってしまうため分けておく。
+  const potatoSold = insP.run(3, 2, "富良野産 じゃがいも(キタアカリ) 10kg", "毎日出荷できる定番。", "/img/potato.svg", 1800, price(1800), 0, "ambient", "[]", 0, 0, 900, "23:59").lastInsertRowid as number;
+  const onionSold = insP.run(3, 2, "富良野玉ねぎ 20kg", "貯蔵性の高い定番玉ねぎ。", "/img/onion.svg", 2000, price(2000), 0, "ambient", "[]", 0, 0, 1100, "23:59").lastInsertRowid as number;
+
   const o1 = insOrder.run(5, "shipped", price(3800) * 2, 1200, price(3800) * 2 + 1200, "札幌市中央区南3条西4丁目 海風ビル1F", "店舗", "-2 days").lastInsertRowid as number;
   insItem.run(o1, 1, 2, "朝どれ真ホッケ 5kg箱", "/img/hokke.svg", "chilled", 2, price(3800), 3800);
   const o2 = insOrder.run(7, "shipped", price(1800) * 3 + price(2000), 2000, price(1800) * 3 + price(2000) + 2000, "千歳市泉沢1007-1 キッチン北 第一工場", "工場", "-1 days").lastInsertRowid as number;
-  insItem.run(o2, 5, 3, "富良野産 じゃがいも(キタアカリ) 10kg", "/img/potato.svg", "ambient", 3, price(1800), 1800);
-  insItem.run(o2, 7, 3, "富良野玉ねぎ 20kg", "/img/onion.svg", "ambient", 1, price(2000), 2000);
+  insItem.run(o2, potatoSold, 3, "富良野産 じゃがいも(キタアカリ) 10kg", "/img/potato.svg", "ambient", 3, price(1800), 1800);
+  insItem.run(o2, onionSold, 3, "富良野玉ねぎ 20kg", "/img/onion.svg", "ambient", 1, price(2000), 2000);
 }

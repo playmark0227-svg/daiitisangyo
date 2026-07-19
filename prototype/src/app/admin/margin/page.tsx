@@ -1,7 +1,7 @@
 import { getSettings, salePriceFromCost } from "@/lib/domain";
 import { adminSaveMargin } from "@/actions/admin";
+import { yen } from "@/lib/format";
 
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
 const PREVIEW_COSTS = [1000, 3800, 6400];
 
 export default async function AdminMarginPage({
@@ -27,8 +27,9 @@ export default async function AdminMarginPage({
       <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 16, alignItems: "start" }}>
         <form action={adminSaveMargin} className="card">
           <div className="field">
-            <label>手数料率（%）</label>
+            <label htmlFor="margin_rate">手数料率（%）</label>
             <input
+              id="margin_rate"
               className="input input-xl"
               name="margin_rate"
               type="number"
@@ -42,8 +43,9 @@ export default async function AdminMarginPage({
             </span>
           </div>
           <div className="field">
-            <label>デフォルト締切時刻（当日発送の注文締切）</label>
+            <label htmlFor="default_deadline">デフォルト締切時刻（当日発送の注文締切）</label>
             <input
+              id="default_deadline"
               className="input"
               name="default_deadline"
               type="time"

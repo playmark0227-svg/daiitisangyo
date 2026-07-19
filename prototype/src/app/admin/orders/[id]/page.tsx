@@ -2,9 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrder } from "@/lib/domain";
 import { ORDER_STATUS_LABEL, TEMP_LABEL, type OrderItem, type TempZone } from "@/lib/types";
+import { yen, formatDateTime } from "@/lib/format";
 import RefundForm from "../refund-form";
-
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
 
 export default async function AdminOrderDetailPage({
   params,
@@ -90,7 +89,7 @@ export default async function AdminOrderDetailPage({
             <div className="muted">{order.address_label}</div>
             <div>{order.address}</div>
             <div className="muted" style={{ marginTop: 6 }}>
-              注文日時: {order.created_at.slice(0, 16)}
+              注文日時: {formatDateTime(order.created_at)}
             </div>
           </div>
 

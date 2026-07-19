@@ -1,10 +1,18 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { registerByInvite } from "@/lib/domain";
 import { clearSession, roleHome, setSession } from "@/lib/session";
+import { CART_COOKIE } from "@/components/buyer/cart-view";
 import type { Role, User } from "@/lib/types";
+
+/** ユーザー切替時にカートが別の発注者へ引き継がれないよう削除する */
+async function clearCartCookie() {
+  const jar = await cookies();
+  jar.delete(CART_COOKIE);
+}
 
 /** デモ用: アカウント選択ログイン */
 export async function loginAs(formData: FormData): Promise<void> {
@@ -14,6 +22,7 @@ export async function loginAs(formData: FormData): Promise<void> {
     | undefined;
   if (!user) redirect("/login?error=notfound");
   await setSession(user.id);
+  await clearCartCookie();
   redirect(roleHome(user.role as Role));
 }
 
@@ -35,5 +44,6 @@ export async function registerWithInvite(formData: FormData): Promise<void> {
 
 export async function logout(): Promise<void> {
   await clearSession();
+  await clearCartCookie();
   redirect("/login");
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { listNotifications, listPublicProducts } from "@/lib/domain";
+import { formatDateTime } from "@/lib/format";
 import { ProductFeed } from "@/components/buyer/parts";
 
 export default async function ShopHomePage() {
@@ -27,7 +28,7 @@ export default async function ShopHomePage() {
             <span style={{ fontSize: 20 }}>🔔</span>
             <span className="grow">
               <span className="muted" style={{ display: "block", fontSize: 11 }}>
-                お知らせ・{latest.created_at.slice(5, 16)}
+                お知らせ・{formatDateTime(latest.created_at)}
               </span>
               <span
                 style={{

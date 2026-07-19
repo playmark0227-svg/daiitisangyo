@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import AppBar from "@/components/seller/AppBar";
 import { requestOrderCancel, shipOrder } from "@/actions/seller";
 import { getOrder } from "@/lib/domain";
+import { formatDateTime, yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { ORDER_STATUS_LABEL, TEMP_LABEL } from "@/lib/types";
 
@@ -39,7 +40,7 @@ export default async function SellerOrderDetailPage({
 
         <div className="row" style={{ marginBottom: 12 }}>
           <span className={`pill pill-${order.status}`}>{ORDER_STATUS_LABEL[order.status]}</span>
-          <span className="muted">{order.created_at}</span>
+          <span className="muted">{formatDateTime(order.created_at)}</span>
         </div>
 
         <div className="sec-h" style={{ marginTop: 0 }}>
@@ -87,11 +88,11 @@ export default async function SellerOrderDetailPage({
         <div className="card" style={{ marginTop: 12 }}>
           <div className="total-row">
             <span>お店の支払い分（あなたの品物）</span>
-            <b>{myTotal.toLocaleString("ja-JP")}円</b>
+            <b>{yen(myTotal)}</b>
           </div>
           <div className="total-row">
             <span>あなたの受取</span>
-            <b>{myIncome.toLocaleString("ja-JP")}円</b>
+            <b>{yen(myIncome)}</b>
           </div>
         </div>
 

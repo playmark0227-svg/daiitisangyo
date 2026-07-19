@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { listAllProducts } from "@/lib/domain";
-import { TEMP_LABEL, type Badge, type TempZone } from "@/lib/types";
+import type { TempZone } from "@/lib/types";
 import { adminSetProductPublic } from "@/actions/admin";
+import { yen } from "@/lib/format";
+import Badges from "@/components/Badges";
 import ToggleForm from "../toggle-form";
-
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
 
 export default async function AdminProductsPage() {
   const products = listAllProducts();
@@ -32,7 +32,6 @@ export default async function AdminProductsPage() {
           </thead>
           <tbody>
             {products.map((p) => {
-              const badges = JSON.parse(p.badges) as Badge[];
               return (
                 <tr key={p.id}>
                   <td>
@@ -68,14 +67,7 @@ export default async function AdminProductsPage() {
                     {p.stock === 0 ? <span className="soldout">売り切れ</span> : p.stock}
                   </td>
                   <td>
-                    <span className="badges">
-                      <span className="badge badge-temp">{TEMP_LABEL[p.temp_zone as TempZone]}</span>
-                      {badges.map((b) => (
-                        <span key={b} className={`badge badge-${b}`}>
-                          {b}
-                        </span>
-                      ))}
-                    </span>
+                    <Badges badges={p.badges} temp={p.temp_zone as TempZone} />
                   </td>
                   <td>
                     <ToggleForm

@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Badges from "@/components/Badges";
 import AppBar from "@/components/seller/AppBar";
-import Badges from "@/components/seller/Badges";
 import { publishTemplateToday } from "@/actions/seller";
 import { getProduct, listSellerProducts } from "@/lib/domain";
+import { yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 export default async function TemplatesPage({
@@ -55,8 +56,8 @@ export default async function TemplatesPage({
                     <Badges badges={t.badges} temp={t.temp_zone} />
                     <div style={{ fontWeight: 800, lineHeight: 1.4 }}>{t.title}</div>
                     <div className="muted">
-                      売り場価格 {t.sale_price.toLocaleString("ja-JP")}円 ・ あなたの受取{" "}
-                      {t.cost_price.toLocaleString("ja-JP")}円
+                      売り場価格 {yen(t.sale_price)}（税込） ・ あなたの受取{" "}
+                      {yen(t.cost_price)}
                     </div>
                   </div>
                   <Link className="btn btn-ghost btn-sm" href={`/sell/p/${t.id}/edit`}>

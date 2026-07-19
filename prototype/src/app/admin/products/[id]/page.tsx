@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProduct, listCategories } from "@/lib/domain";
-import { TEMP_LABEL, type Badge, type TempZone } from "@/lib/types";
+import { TEMP_LABEL, type TempZone } from "@/lib/types";
 import { adminUpdateProduct } from "@/actions/admin";
-
-const ALL_BADGES: Badge[] = ["NEW", "人気", "朝どれ", "訳あり"];
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
+import { yen } from "@/lib/format";
+import { BADGE_OPTIONS, parseBadges } from "@/lib/catalog";
 
 export default async function AdminProductEditPage({
   params,
@@ -19,7 +18,7 @@ export default async function AdminProductEditPage({
   const product = getProduct(Number(id));
   if (!product) notFound();
   const categories = listCategories();
-  const badges = JSON.parse(product.badges) as Badge[];
+  const badges = parseBadges(product.badges);
 
   return (
     <>
@@ -80,8 +79,8 @@ export default async function AdminProductEditPage({
           <input type="hidden" name="id" value={product.id} />
 
           <div className="field">
-            <label>カテゴリ</label>
-            <select className="input" name="category_id" defaultValue={product.category_id}>
+            <label htmlFor="category_id">カテゴリ</label>
+            <select id="category_id" className="input" name="category_id" defaultValue={product.category_id}>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -93,7 +92,7 @@ export default async function AdminProductEditPage({
           <div className="field">
             <label>バッジ（当てはまるものに印を付けてください）</label>
             <div className="row" style={{ flexWrap: "wrap", gap: 14 }}>
-              {ALL_BADGES.map((b) => (
+              {BADGE_OPTIONS.map((b) => (
                 <label key={b} className="row" style={{ gap: 6, cursor: "pointer" }}>
                   <input
                     type="checkbox"
@@ -123,8 +122,9 @@ export default async function AdminProductEditPage({
           </div>
 
           <div className="field">
-            <label>当日発送の締切時刻</label>
+            <label htmlFor="deadline_time">当日発送の締切時刻</label>
             <input
+              id="deadline_time"
               className="input"
               type="time"
               name="deadline_time"

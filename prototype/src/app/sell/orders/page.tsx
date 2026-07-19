@@ -1,6 +1,7 @@
 import Link from "next/link";
 import AppBar from "@/components/seller/AppBar";
 import { listSellerOrders } from "@/lib/domain";
+import { formatDateTime, yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { ORDER_STATUS_LABEL } from "@/lib/types";
 
@@ -42,11 +43,11 @@ export default async function SellerOrdersPage({
                     {ORDER_STATUS_LABEL[o.status]}
                   </span>
                   <span className="grow" />
-                  <span className="muted">{o.created_at.slice(5, 16)}</span>
+                  <span className="muted">{formatDateTime(o.created_at)}</span>
                 </div>
                 <div style={{ fontWeight: 800, marginTop: 4 }}>{o.buyer_org}</div>
                 <div className="muted">
-                  あなたの品物 {o.my_qty}点 ・ {o.my_total.toLocaleString("ja-JP")}円
+                  あなたの品物 {o.my_qty}点 ・ {yen(o.my_total)}
                 </div>
               </Link>
             ))}

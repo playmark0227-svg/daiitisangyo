@@ -21,5 +21,6 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
+  res.cookies.delete("cart"); // 別ユーザーへのカート引き継ぎを防ぐ
   return res;
 }

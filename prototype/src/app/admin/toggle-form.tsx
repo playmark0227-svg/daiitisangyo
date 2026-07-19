@@ -24,6 +24,7 @@ export default function ToggleForm({
         <input
           type="checkbox"
           checked={checked}
+          aria-label={title}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}
         />
         <span className="tg" />

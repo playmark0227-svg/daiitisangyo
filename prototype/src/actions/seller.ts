@@ -21,7 +21,10 @@ const TEMP_VALUES = ["frozen", "chilled", "ambient"];
 const BADGE_VALUES = ["NEW", "人気", "朝どれ", "訳あり"];
 
 function num(v: FormDataEntryValue | null, fallback = 0): number {
-  const n = Number(v);
+  // 空文字は Number('') === 0 になり fallback が効かないため明示的に弾く
+  const s = String(v ?? "").trim();
+  if (s === "") return fallback;
+  const n = Number(s);
   return Number.isFinite(n) ? n : fallback;
 }
 
@@ -219,7 +222,8 @@ export async function sellerMonthlyStats(): Promise<{
        FROM order_items oi
        JOIN orders o ON o.id = oi.order_id
        WHERE oi.seller_id = ?
-         AND strftime('%Y-%m', o.created_at) = strftime('%Y-%m', 'now', 'localtime')
+         AND o.created_at >= date('now','localtime','start of month')
+         AND o.created_at < date('now','localtime','start of month','+1 month')
          AND o.status != 'refunded'`
     )
     .get(user.id) as unknown as { orders: number; sales: number; income: number };

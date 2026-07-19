@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { clearCart, removeLine, updateQty } from "@/actions/buyer";
 import { buildCartView, readCart } from "@/components/buyer/cart-view";
-import { photoSrc, yen } from "@/components/buyer/parts";
+import { yen } from "@/lib/format";
+import { photoSrc } from "@/components/buyer/parts";
 
 export default async function CartPage() {
   await requireUser("buyer");
@@ -40,7 +41,7 @@ export default async function CartPage() {
           <div className="card" key={r.line.productId}>
             <div className="row" style={{ alignItems: "flex-start" }}>
               <img
-                src={photoSrc(p?.photo ?? "")}
+                src={photoSrc(p?.photo ?? "", p?.category_name)}
                 alt={p?.title ?? "取り扱い終了した商品"}
                 style={{
                   width: 62,

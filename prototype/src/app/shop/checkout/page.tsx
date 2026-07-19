@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/session";
 import { listAddresses } from "@/lib/domain";
 import { placeOrderAction } from "@/actions/buyer";
 import { buildCartView, readCart } from "@/components/buyer/cart-view";
-import { yen } from "@/components/buyer/parts";
+import { yen } from "@/lib/format";
 
 export default async function CheckoutPage({
   searchParams,
@@ -85,12 +85,12 @@ export default async function CheckoutPage({
             <span style={{ fontWeight: 800 }}>新しい配送先に届ける</span>
           </label>
           <div className="field" style={{ marginTop: 6 }}>
-            <label>配送先の名前（例：店舗・工場）</label>
-            <input className="input" name="newLabel" placeholder="店舗" />
+            <label htmlFor="newLabel">配送先の名前（例：店舗・工場）</label>
+            <input id="newLabel" className="input" name="newLabel" placeholder="店舗" />
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label>住所</label>
-            <input className="input" name="newAddress" placeholder="札幌市中央区…" />
+            <label htmlFor="newAddress">住所</label>
+            <input id="newAddress" className="input" name="newAddress" placeholder="札幌市中央区…" />
           </div>
         </div>
 
@@ -131,8 +131,9 @@ export default async function CheckoutPage({
             デモ決済です。本番はStripeに置き換わります。実際の請求は発生しません。
           </div>
           <div className="field">
-            <label>カード番号</label>
+            <label htmlFor="cardNumber">カード番号</label>
             <input
+              id="cardNumber"
               className="input"
               name="cardNumber"
               inputMode="numeric"
@@ -142,12 +143,13 @@ export default async function CheckoutPage({
           </div>
           <div className="row" style={{ alignItems: "flex-start" }}>
             <div className="field grow" style={{ marginBottom: 0 }}>
-              <label>有効期限</label>
-              <input className="input" name="cardExp" autoComplete="off" placeholder="12/28" />
+              <label htmlFor="cardExp">有効期限</label>
+              <input id="cardExp" className="input" name="cardExp" autoComplete="off" placeholder="12/28" />
             </div>
             <div className="field grow" style={{ marginBottom: 0 }}>
-              <label>セキュリティコード</label>
+              <label htmlFor="cardCvc">セキュリティコード</label>
               <input
+                id="cardCvc"
                 className="input"
                 name="cardCvc"
                 inputMode="numeric"

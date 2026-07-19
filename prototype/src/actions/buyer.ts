@@ -89,6 +89,7 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
   const choice = String(formData.get("addressId") ?? "");
   let label = "";
   let address = "";
+  let saveNew = false;
   if (choice === "" ) {
     redirect(`/shop/checkout?error=${encodeURIComponent("配送先を選択してください。")}`);
   } else if (choice === "new") {
@@ -97,7 +98,7 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
     if (!address) {
       redirect(`/shop/checkout?error=${encodeURIComponent("新しい配送先の住所を入力してください。")}`);
     }
-    addAddress(user.id, label, address); // 次回から選べるように保存
+    saveNew = true;
   } else {
     const a = listAddresses(user.id).find((x) => x.id === Number(choice));
     if (!a) redirect(`/shop/checkout?error=${encodeURIComponent("配送先を選択してください。")}`);
@@ -106,11 +107,15 @@ export async function placeOrderAction(formData: FormData): Promise<void> {
   }
 
   const r = placeOrder(user.id, lines, { label, address });
-  if (!r.ok || !r.orderId) {
+  if (!r.ok || !r.orderIds || r.orderIds.length === 0) {
     redirect(`/shop/checkout?error=${encodeURIComponent(r.error ?? "注文に失敗しました。もう一度お試しください。")}`);
   }
+  // 注文成功後にだけ新住所を保存（失敗時の住所帳汚染を防ぐ）
+  if (saveNew) addAddress(user.id, label, address);
   await writeCart([]);
-  redirect(`/shop/orders/${r.orderId}?done=1`);
+  // 出品者ごとに分割されるため複数注文になりうる。1件なら詳細、複数なら履歴へ
+  if (r.orderIds.length === 1) redirect(`/shop/orders/${r.orderIds[0]}?done=1`);
+  redirect(`/shop/orders?done=${r.orderIds.length}`);
 }
 
 /* ---------------- 配送先（アカウントページ） ---------------- */

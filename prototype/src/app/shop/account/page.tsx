@@ -64,12 +64,12 @@ export default async function AccountPage({
 
       <form action={addAddressAction} className="card" style={{ marginTop: 12 }}>
         <div className="field">
-          <label>配送先の名前（例：店舗・工場）</label>
-          <input className="input" name="label" placeholder="店舗" />
+          <label htmlFor="addr-label">配送先の名前（例：店舗・工場）</label>
+          <input id="addr-label" className="input" name="label" placeholder="店舗" />
         </div>
         <div className="field">
-          <label>住所</label>
-          <input className="input" name="address" placeholder="札幌市中央区…" />
+          <label htmlFor="addr-address">住所</label>
+          <input id="addr-address" className="input" name="address" placeholder="札幌市中央区…" />
         </div>
         <button className="btn btn-primary btn-block" type="submit">
           配送先を追加する

@@ -1,11 +1,9 @@
 import AppBar from "@/components/seller/AppBar";
 import { createTemplate } from "@/actions/seller";
+import { BADGE_OPTIONS, TEMP_ZONES } from "@/lib/catalog";
 import { getSettings, listCategories } from "@/lib/domain";
 import { requireUser } from "@/lib/session";
-import { TEMP_LABEL, type Badge, type TempZone } from "@/lib/types";
 
-const TEMPS: TempZone[] = ["frozen", "chilled", "ambient"];
-const BADGES: Badge[] = ["NEW", "人気", "朝どれ", "訳あり"];
 const PHOTO_OPTIONS = [
   { value: "/img/hokke.svg", label: "ホッケ（魚）" },
   { value: "/img/sake.svg", label: "サケ" },
@@ -43,13 +41,23 @@ export default async function NewTemplatePage({
 
         <form action={createTemplate}>
           <div className="field">
-            <label>商品名</label>
-            <input className="input" name="title" placeholder="例：富良野玉ねぎ 20kg" />
+            <label htmlFor="t-title">商品名</label>
+            <input
+              id="t-title"
+              className="input"
+              name="title"
+              placeholder="例：富良野玉ねぎ 20kg"
+            />
           </div>
 
           <div className="field">
-            <label>カテゴリ</label>
-            <select className="input" name="category_id" defaultValue={categories[0]?.id}>
+            <label htmlFor="t-category">カテゴリ</label>
+            <select
+              id="t-category"
+              className="input"
+              name="category_id"
+              defaultValue={categories[0]?.id}
+            >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -59,9 +67,10 @@ export default async function NewTemplatePage({
           </div>
 
           <div className="field">
-            <label>お渡し金額（あなたが受け取る金額・1つあたり）</label>
+            <label htmlFor="t-cost">お渡し金額（あなたが受け取る金額・1つあたり）</label>
             <div className="row">
               <input
+                id="t-cost"
                 className="input input-xl grow"
                 name="cost_price"
                 inputMode="numeric"
@@ -71,13 +80,14 @@ export default async function NewTemplatePage({
               <span style={{ fontSize: 18, fontWeight: 800 }}>円</span>
             </div>
             <p className="hint">
-              売り場の価格は「お渡し金額＋手数料{settings.margin_rate}%」で自動計算されます。
+              売り場の価格（税込）は「お渡し金額＋手数料{settings.margin_rate}%」で自動計算されます。
             </p>
           </div>
 
           <div className="field">
-            <label>1回あたりの標準数量（出品時に変えられます）</label>
+            <label htmlFor="t-stock">1回あたりの標準数量（出品時に変えられます）</label>
             <input
+              id="t-stock"
               className="input"
               name="stock"
               type="number"
@@ -91,15 +101,15 @@ export default async function NewTemplatePage({
           <div className="field">
             <label>温度帯</label>
             <div className="seg">
-              {TEMPS.map((t) => (
-                <label key={t}>
+              {TEMP_ZONES.map((t) => (
+                <label key={t.value}>
                   <input
                     type="radio"
                     name="temp_zone"
-                    value={t}
-                    defaultChecked={t === "chilled"}
+                    value={t.value}
+                    defaultChecked={t.value === "chilled"}
                   />
-                  <span>{TEMP_LABEL[t]}</span>
+                  <span>{t.label}</span>
                 </label>
               ))}
             </div>
@@ -108,7 +118,7 @@ export default async function NewTemplatePage({
           <div className="field">
             <label>バッジ（あてはまるものに印）</label>
             <div className="seg">
-              {BADGES.map((b) => (
+              {BADGE_OPTIONS.map((b) => (
                 <label key={b}>
                   <input type="checkbox" name="badges" value={b} />
                   <span>{b}</span>
@@ -118,8 +128,8 @@ export default async function NewTemplatePage({
           </div>
 
           <div className="field">
-            <label>写真（見本から選択。あとで編集できます）</label>
-            <select className="input" name="photo" defaultValue="/img/hokke.svg">
+            <label htmlFor="t-photo">写真（見本から選択。あとで編集できます）</label>
+            <select id="t-photo" className="input" name="photo" defaultValue="/img/hokke.svg">
               {PHOTO_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -129,9 +139,10 @@ export default async function NewTemplatePage({
           </div>
 
           <div className="field">
-            <label>送料（1回の発送あたり）</label>
+            <label htmlFor="t-shipping">送料（1回の発送あたり）</label>
             <div className="row">
               <input
+                id="t-shipping"
                 className="input"
                 name="shipping_fee"
                 inputMode="numeric"
@@ -144,8 +155,9 @@ export default async function NewTemplatePage({
           </div>
 
           <div className="field">
-            <label>当日発送の締切時刻</label>
+            <label htmlFor="t-deadline">当日発送の締切時刻</label>
             <input
+              id="t-deadline"
               className="input"
               name="deadline_time"
               type="time"
@@ -156,8 +168,9 @@ export default async function NewTemplatePage({
           </div>
 
           <div className="field">
-            <label>説明文（入れなくてもOK）</label>
+            <label htmlFor="t-description">説明文（入れなくてもOK）</label>
             <textarea
+              id="t-description"
               className="input"
               name="description"
               rows={4}

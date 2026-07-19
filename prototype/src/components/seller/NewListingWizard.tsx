@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { createListing } from "@/actions/seller";
+import { TEMP_ZONES, photoForCategory } from "@/lib/catalog";
+import { yen } from "@/lib/format";
+import { salePrice } from "@/lib/pricing";
 import { TEMP_LABEL, type Category, type TempZone } from "@/lib/types";
-
-const DEFAULT_PHOTO = "/img/hokke.svg";
-const TEMPS: TempZone[] = ["frozen", "chilled", "ambient"];
 
 function Steps({ current }: { current: number }) {
   return (
@@ -59,10 +59,37 @@ export default function NewListingWizard({
 
   const costNum = Math.floor(Number(cost));
   const validCost = Number.isFinite(costNum) && costNum > 0;
-  const sale = validCost ? Math.ceil((costNum * (1 + marginRate / 100)) / 10) * 10 : 0;
+  const sale = validCost ? salePrice(costNum, marginRate) : 0;
   const catName = categories.find((c) => c.id === categoryId)?.name ?? "商品";
   const finalTitle = title.trim() || `本日の${catName}`;
-  const finalPhoto = photo || DEFAULT_PHOTO;
+  // 写真をアップした場合はそのパス、なければ選択カテゴリに合わせた既定画像
+  const finalPhoto = photo || photoForCategory(catName);
+
+  /**
+   * 送信前にクライアント側で縮小・再圧縮する（長辺1280px・JPEG品質0.8）。
+   * 漁港等の低速回線でスマホ実写真(数MB)をそのまま送らないための対策。
+   * 縮小に失敗した場合は元ファイルのまま送る（サーバー側の8MB上限が最終防衛線）。
+   */
+  async function compressImage(file: File): Promise<Blob> {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const MAX = 1280;
+      const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
+      if (scale >= 1 && file.size < 500 * 1024) return file; // 小さい画像はそのまま
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.8)
+      );
+      return blob ?? file;
+    } catch {
+      return file;
+    }
+  }
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -71,8 +98,9 @@ export default function NewListingWizard({
     setUploadError("");
     setUploading(true);
     try {
+      const compressed = await compressImage(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed, "photo.jpg");
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const json = (await res.json()) as { ok: boolean; path?: string; error?: string };
       if (json.ok && json.path) {
@@ -100,6 +128,7 @@ export default function NewListingWizard({
           type="file"
           accept="image/*"
           capture="environment"
+          aria-label="品物の写真をとる・選ぶ"
           style={{ display: "none" }}
           onChange={onFileChange}
         />
@@ -158,7 +187,8 @@ export default function NewListingWizard({
               type="button"
               className="btn btn-ghost btn-block"
               onClick={() => {
-                setPhoto(DEFAULT_PHOTO);
+                // 写真なし。finalPhoto が選択カテゴリの既定画像を使う
+                setPhoto("");
                 setPreview("");
                 setStep(2);
               }}
@@ -196,8 +226,8 @@ export default function NewListingWizard({
 
         {validCost ? (
           <div className="ok-box" style={{ fontSize: 15 }}>
-            お店に出る価格：
-            <b style={{ fontSize: 22 }}>{sale.toLocaleString("ja-JP")}円</b>
+            お店に出る価格（税込）：
+            <b style={{ fontSize: 22 }}>{yen(sale)}</b>
             <span style={{ fontWeight: 600 }}>（手数料{marginRate}%込み）</span>
           </div>
         ) : (
@@ -236,15 +266,15 @@ export default function NewListingWizard({
         <div className="field">
           <label>温度帯（どうやって送りますか）</label>
           <div className="seg">
-            {TEMPS.map((t) => (
-              <label key={t}>
+            {TEMP_ZONES.map((t) => (
+              <label key={t.value}>
                 <input
                   type="radio"
                   name="wizard_temp"
-                  checked={temp === t}
-                  onChange={() => setTemp(t)}
+                  checked={temp === t.value}
+                  onChange={() => setTemp(t.value)}
                 />
-                <span>{TEMP_LABEL[t]}</span>
+                <span>{t.label}</span>
               </label>
             ))}
           </div>
@@ -313,11 +343,11 @@ export default function NewListingWizard({
           <div style={{ fontSize: 19, fontWeight: 800, marginBottom: 8 }}>{finalTitle}</div>
           <div className="total-row">
             <span>あなたの受取（1つあたり）</span>
-            <b>{costNum.toLocaleString("ja-JP")}円</b>
+            <b>{yen(costNum)}</b>
           </div>
           <div className="total-row">
-            <span>お店に出る価格</span>
-            <b>{sale.toLocaleString("ja-JP")}円</b>
+            <span>お店に出る価格（税込）</span>
+            <b>{yen(sale)}</b>
           </div>
           <div className="total-row">
             <span>数量</span>

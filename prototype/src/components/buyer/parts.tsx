@@ -1,48 +1,19 @@
 import Link from "next/link";
+import Badges from "@/components/Badges";
+import { yen } from "@/lib/format";
+import { DEFAULT_PHOTO, photoForCategory } from "@/lib/catalog";
 import { isPastDeadline, minutesToDeadline } from "@/lib/domain";
-import { TEMP_LABEL, type Product, type TempZone } from "@/lib/types";
+import type { Product } from "@/lib/types";
 
-/** 金額表示（税込）。例: 4,370円 */
-export function yen(n: number): string {
-  return n.toLocaleString("ja-JP") + "円";
+/**
+ * 写真が未登録のときのプレースホルダ。
+ * catalog.ts のカテゴリ別デフォルト画像に統一（カテゴリ不明時は DEFAULT_PHOTO）。
+ */
+export function photoSrc(photo: string, category?: string): string {
+  return photo || photoForCategory(category) || DEFAULT_PHOTO;
 }
 
-export function parseBadges(json: string): string[] {
-  try {
-    const a = JSON.parse(json) as unknown;
-    return Array.isArray(a) ? (a as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-/** 写真が未登録のときのプレースホルダ */
-export const PHOTO_FALLBACK =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><rect width='240' height='240' fill='#e7edf2'/><text x='120' y='134' font-size='44' text-anchor='middle'>&#128247;</text></svg>`
-  );
-
-export function photoSrc(photo: string): string {
-  return photo || PHOTO_FALLBACK;
-}
-
-/** バッジ（NEW/人気/朝どれ/訳あり）＋温度帯バッジ */
-export function ProductBadges({ product }: { product: Product }) {
-  const badges = parseBadges(product.badges);
-  return (
-    <span className="badges">
-      {badges.map((b) => (
-        <span key={b} className={`badge badge-${b}`}>
-          {b}
-        </span>
-      ))}
-      <span className="badge badge-temp">{TEMP_LABEL[product.temp_zone as TempZone]}</span>
-    </span>
-  );
-}
-
-/** 締切チップ: 「13:00までの注文で当日発送」「残り○分」「本日分は締切済み」 */
+/** 締切チップ: 「HH:MMまでの注文で当日発送」「締切まで残り○分」「本日分は締切済み」「売り切れ」 */
 export function DeadlineChip({ deadline, stock }: { deadline: string; stock: number }) {
   if (stock === 0) return <span className="soldout">売り切れ</span>;
   if (isPastDeadline(deadline)) return <span className="deadline past">本日分は締切済み</span>;
@@ -72,24 +43,20 @@ export function ProductFeed({ products }: { products: Product[] }) {
             className="pcard"
             style={soldout || past ? { opacity: 0.55 } : undefined}
           >
-            <img className="pc-photo" src={photoSrc(p.photo)} alt={p.title} />
-            <span className="pc-body" style={{ display: "block" }}>
-              <ProductBadges product={p} />
-              <span className="pc-title" style={{ display: "block" }}>
-                {p.title}
-              </span>
-              <span className="pc-meta" style={{ display: "block" }}>
-                {p.seller_name}
-              </span>
-              <span className="pc-price" style={{ display: "block", marginTop: 2 }}>
+            <img className="pc-photo" src={photoSrc(p.photo, p.category_name)} alt={p.title} />
+            <div className="pc-body">
+              <Badges badges={p.badges} temp={p.temp_zone} />
+              <div className="pc-title">{p.title}</div>
+              <div className="pc-meta">{p.seller_name}</div>
+              <div className="pc-price" style={{ marginTop: 2 }}>
                 {yen(p.sale_price)}
                 <small>（税込）</small>
-              </span>
-              <span className="row" style={{ gap: 8, marginTop: 2 }}>
+              </div>
+              <div className="row" style={{ gap: 8, marginTop: 2 }}>
                 <DeadlineChip deadline={p.deadline_time} stock={p.stock} />
                 {!soldout && <span className="pc-meta">残り{p.stock}点</span>}
-              </span>
-            </span>
+              </div>
+            </div>
           </Link>
         );
       })}

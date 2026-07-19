@@ -1,15 +1,10 @@
 import Link from "next/link";
-import { getOrder, listAllOrders } from "@/lib/domain";
+import { listAllOrdersWithCounts } from "@/lib/domain";
 import { ORDER_STATUS_LABEL } from "@/lib/types";
-
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
+import { yen, formatDateTime } from "@/lib/format";
 
 export default async function AdminOrdersPage() {
-  const orders = listAllOrders().map((o) => {
-    const detail = getOrder(o.id);
-    const itemCount = detail ? detail.items.reduce((a, i) => a + i.qty, 0) : 0;
-    return { ...o, itemCount };
-  });
+  const orders = listAllOrdersWithCounts();
 
   return (
     <>
@@ -50,9 +45,9 @@ export default async function AdminOrdersPage() {
             {orders.map((o) => (
               <tr key={o.id}>
                 <td>#{o.id}</td>
-                <td>{o.created_at.slice(0, 16)}</td>
+                <td>{formatDateTime(o.created_at)}</td>
                 <td>{o.buyer_org ?? o.buyer_name}</td>
-                <td className="num">{o.itemCount} 点</td>
+                <td className="num">{o.item_count} 点</td>
                 <td className="num" style={{ fontWeight: 700 }}>
                   {yen(o.grand_total)}
                 </td>

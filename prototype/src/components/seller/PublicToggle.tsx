@@ -19,6 +19,7 @@ export default function PublicToggle({
       <label className="toggle" style={pending ? { opacity: 0.5 } : undefined}>
         <input
           type="checkbox"
+          aria-label="売り場への表示"
           checked={on}
           disabled={pending}
           onChange={(e) => {

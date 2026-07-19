@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { getProduct, isPastDeadline } from "@/lib/domain";
+import { getProductsByIds, isPastDeadline } from "@/lib/domain";
 import type { CartLine, Product } from "@/lib/types";
 
 /** カートcookie名（値は JSON.stringify(CartLine[])） */
@@ -48,8 +48,9 @@ export interface CartView {
  * 「出品者ごとに shipping_fee の最大値を1回だけ課金（出品者ごとに1梱包）」
  */
 export function buildCartView(lines: CartLine[]): CartView {
+  const products = getProductsByIds(lines.map((l) => l.productId));
   const rows: CartRow[] = lines.map((line) => {
-    const p = getProduct(line.productId);
+    const p = products.get(line.productId);
     if (!p || !p.is_public || p.is_template) {
       return {
         line,

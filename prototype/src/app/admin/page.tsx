@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { dashboardStats } from "@/lib/domain";
 import { ORDER_STATUS_LABEL } from "@/lib/types";
-
-const yen = (n: number) => n.toLocaleString("ja-JP") + "円";
+import { yen, formatDateTime } from "@/lib/format";
 
 export default async function AdminDashboardPage() {
   const s = dashboardStats();
@@ -73,7 +72,7 @@ export default async function AdminDashboardPage() {
             {s.recentOrders.map((o) => (
               <tr key={o.id}>
                 <td>#{o.id}</td>
-                <td>{o.created_at.slice(0, 16)}</td>
+                <td>{formatDateTime(o.created_at)}</td>
                 <td>{o.buyer_org ?? o.buyer_name}</td>
                 <td className="num">{yen(o.grand_total)}</td>
                 <td>

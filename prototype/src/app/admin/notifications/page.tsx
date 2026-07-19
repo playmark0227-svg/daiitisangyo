@@ -3,35 +3,30 @@ import { requireUser } from "@/lib/session";
 import { listNotifications, markAllRead } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 
-export default async function NotificationsPage() {
-  const user = await requireUser("buyer");
-  // 未読太字はこの表示までは残し、開いた時点で既読化する（ヘッダのバッジは次の遷移で消える。出品者側と同じ挙動）。
-  const notifs = listNotifications(user.id);
+export default async function AdminNotificationsPage() {
+  const user = await requireUser("admin");
+  const items = listNotifications(user.id);
+  // 一覧を開いた時点で既読にする（未読の太字は取得済みデータで描画する）
   markAllRead(user.id);
 
   return (
     <>
-      <div className="sec-h" style={{ marginTop: 4 }}>
-        お知らせ<span className="sec-sub">開くと既読になります</span>
-      </div>
+      <h1 className="admin-h1">お知らせ</h1>
+      <p className="muted" style={{ margin: "0 0 14px" }}>
+        欠品キャンセル申請など、運営対応が必要なお知らせが届きます。開くと既読になります。
+      </p>
 
-      {notifs.length === 0 ? (
-        <p className="muted" style={{ textAlign: "center", padding: "34px 0" }}>
+      {items.length === 0 ? (
+        <div className="card" style={{ textAlign: "center", color: "var(--ink-soft)" }}>
           お知らせはまだありません。
-        </p>
+        </div>
       ) : (
-        <div className="card" style={{ padding: "4px 14px" }}>
-          {notifs.map((n) => {
+        <div className="card" style={{ padding: "4px 14px", maxWidth: 640 }}>
+          {items.map((n) => {
             const body = (
               <>
-                <span aria-hidden="true" style={{ flex: "none", fontSize: 17 }}>
-                  {n.type === "shipped"
-                    ? "🚚"
-                    : n.type === "refunded"
-                      ? "↩️"
-                      : n.type === "new_product"
-                        ? "🐟"
-                        : "🔔"}
+                <span style={{ flex: "none", fontSize: 17 }}>
+                  {n.type === "cancel_request" ? "⚠️" : "🔔"}
                 </span>
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span style={{ display: "block", lineHeight: 1.55 }}>{n.message}</span>

@@ -1,6 +1,7 @@
 import AppBar from "@/components/seller/AppBar";
 import { logout } from "@/actions/auth";
 import { sellerMonthlyStats } from "@/actions/seller";
+import { yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
 export default async function SellerAccountPage() {
@@ -32,17 +33,11 @@ export default async function SellerAccountPage() {
           </div>
           <div className="stat">
             <div className="st-label">売上額（お店の支払い分）</div>
-            <div className="st-value">
-              {stats.sales.toLocaleString("ja-JP")}
-              <small> 円</small>
-            </div>
+            <div className="st-value">{yen(stats.sales)}</div>
           </div>
           <div className="stat">
             <div className="st-label">あなたの受取額</div>
-            <div className="st-value">
-              {stats.income.toLocaleString("ja-JP")}
-              <small> 円</small>
-            </div>
+            <div className="st-value">{yen(stats.income)}</div>
           </div>
         </div>
         <p className="hint" style={{ marginTop: -8 }}>

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "./db";
@@ -5,7 +6,8 @@ import type { Role, User } from "./types";
 
 const COOKIE = "demo_session";
 
-export async function getUser(): Promise<User | null> {
+/** layoutと各ページの両方から呼ばれるため React cache でリクエスト内メモ化 */
+export const getUser = cache(async (): Promise<User | null> => {
   const jar = await cookies();
   const raw = jar.get(COOKIE)?.value;
   if (!raw) return null;
@@ -15,7 +17,7 @@ export async function getUser(): Promise<User | null> {
     .prepare("SELECT * FROM users WHERE id = ? AND active = 1")
     .get(id) as unknown as User | undefined;
   return row ?? null;
-}
+});
 
 export async function requireUser(role?: Role): Promise<User> {
   const user = await getUser();

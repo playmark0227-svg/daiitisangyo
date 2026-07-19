@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { getOrder } from "@/lib/domain";
 import { ORDER_STATUS_LABEL } from "@/lib/types";
-import { photoSrc, yen } from "@/components/buyer/parts";
+import { formatDateTime, yen } from "@/lib/format";
+import { photoSrc } from "@/components/buyer/parts";
 
 export default async function OrderDetailPage({
   params,
@@ -53,7 +54,7 @@ export default async function OrderDetailPage({
 
       <div className="sec-h" style={{ marginTop: 12 }}>
         注文 #{order.id}
-        <span className="sec-sub">{order.created_at.slice(0, 16)}</span>
+        <span className="sec-sub">{formatDateTime(order.created_at)}</span>
         <span className={`pill pill-${order.status}`} style={{ marginLeft: "auto" }}>
           {ORDER_STATUS_LABEL[order.status]}
         </span>

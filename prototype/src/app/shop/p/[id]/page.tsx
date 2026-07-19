@@ -3,7 +3,9 @@ import { requireUser } from "@/lib/session";
 import { getProduct, isPastDeadline } from "@/lib/domain";
 import { TEMP_LABEL, type TempZone } from "@/lib/types";
 import { addToCart } from "@/actions/buyer";
-import { DeadlineChip, ProductBadges, photoSrc, yen } from "@/components/buyer/parts";
+import { yen } from "@/lib/format";
+import Badges from "@/components/Badges";
+import { DeadlineChip, photoSrc } from "@/components/buyer/parts";
 
 const ERROR_TEXT: Record<string, string> = {
   soldout: "申し訳ありません。この商品は売り切れました。",
@@ -63,7 +65,7 @@ export default async function ProductDetailPage({
       )}
 
       <img
-        src={photoSrc(p.photo)}
+        src={photoSrc(p.photo, p.category_name)}
         alt={p.title}
         style={{
           width: "100%",
@@ -77,7 +79,7 @@ export default async function ProductDetailPage({
       />
 
       <div style={{ marginTop: 12 }}>
-        <ProductBadges product={p} />
+        <Badges badges={p.badges} temp={p.temp_zone} />
       </div>
       <h1 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.5, margin: "6px 0 2px" }}>
         {p.title}
@@ -127,8 +129,8 @@ export default async function ProductDetailPage({
         <form action={addToCart} className="card">
           <input type="hidden" name="productId" value={p.id} />
           <div className="field">
-            <label>数量（残り{p.stock}点まで）</label>
-            <select className="input" name="qty" defaultValue="1">
+            <label htmlFor="qty">数量（残り{p.stock}点まで）</label>
+            <select id="qty" className="input" name="qty" defaultValue="1">
               {Array.from({ length: maxQty }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>
                   {n}

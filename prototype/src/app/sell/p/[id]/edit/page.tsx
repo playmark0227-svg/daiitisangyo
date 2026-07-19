@@ -1,12 +1,10 @@
 import { redirect } from "next/navigation";
 import AppBar from "@/components/seller/AppBar";
 import { generateAiDescription, saveProduct } from "@/actions/seller";
+import { BADGE_OPTIONS, TEMP_ZONES, parseBadges } from "@/lib/catalog";
 import { getProduct, getSettings, listCategories } from "@/lib/domain";
+import { yen } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import { TEMP_LABEL, type Badge, type TempZone } from "@/lib/types";
-
-const TEMPS: TempZone[] = ["frozen", "chilled", "ambient"];
-const BADGES: Badge[] = ["NEW", "人気", "朝どれ", "訳あり"];
 
 export default async function EditProductPage({
   params,
@@ -23,13 +21,7 @@ export default async function EditProductPage({
 
   const categories = listCategories();
   const settings = getSettings();
-  let badges: string[] = [];
-  try {
-    const parsed = JSON.parse(product.badges);
-    if (Array.isArray(parsed)) badges = parsed.map(String);
-  } catch {
-    /* noop */
-  }
+  const badges = parseBadges(product.badges);
   const isTemplate = product.is_template === 1;
 
   return (
@@ -64,13 +56,18 @@ export default async function EditProductPage({
           <input type="hidden" name="id" value={product.id} />
 
           <div className="field">
-            <label>商品名</label>
-            <input className="input" name="title" defaultValue={product.title} />
+            <label htmlFor="p-title">商品名</label>
+            <input id="p-title" className="input" name="title" defaultValue={product.title} />
           </div>
 
           <div className="field">
-            <label>カテゴリ</label>
-            <select className="input" name="category_id" defaultValue={product.category_id}>
+            <label htmlFor="p-category">カテゴリ</label>
+            <select
+              id="p-category"
+              className="input"
+              name="category_id"
+              defaultValue={product.category_id}
+            >
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -80,9 +77,10 @@ export default async function EditProductPage({
           </div>
 
           <div className="field">
-            <label>お渡し金額（あなたが受け取る金額・1つあたり）</label>
+            <label htmlFor="p-cost">お渡し金額（あなたが受け取る金額・1つあたり）</label>
             <div className="row">
               <input
+                id="p-cost"
                 className="input input-xl grow"
                 name="cost_price"
                 inputMode="numeric"
@@ -92,14 +90,17 @@ export default async function EditProductPage({
               <span style={{ fontSize: 18, fontWeight: 800 }}>円</span>
             </div>
             <p className="hint">
-              いまの売り場の価格：{product.sale_price.toLocaleString("ja-JP")}円（手数料
+              いまの売り場の価格（税込）：{yen(product.sale_price)}（手数料
               {settings.margin_rate}%込み）。金額を変えると保存時に自動で計算し直します。
             </p>
           </div>
 
           <div className="field">
-            <label>{isTemplate ? "1回あたりの標準数量" : "残り在庫（数量）"}</label>
+            <label htmlFor="p-stock">
+              {isTemplate ? "1回あたりの標準数量" : "残り在庫（数量）"}
+            </label>
             <input
+              id="p-stock"
               className="input"
               name="stock"
               type="number"
@@ -113,15 +114,15 @@ export default async function EditProductPage({
           <div className="field">
             <label>温度帯</label>
             <div className="seg">
-              {TEMPS.map((t) => (
-                <label key={t}>
+              {TEMP_ZONES.map((t) => (
+                <label key={t.value}>
                   <input
                     type="radio"
                     name="temp_zone"
-                    value={t}
-                    defaultChecked={product.temp_zone === t}
+                    value={t.value}
+                    defaultChecked={product.temp_zone === t.value}
                   />
-                  <span>{TEMP_LABEL[t]}</span>
+                  <span>{t.label}</span>
                 </label>
               ))}
             </div>
@@ -130,7 +131,7 @@ export default async function EditProductPage({
           <div className="field">
             <label>バッジ（あてはまるものに印）</label>
             <div className="seg">
-              {BADGES.map((b) => (
+              {BADGE_OPTIONS.map((b) => (
                 <label key={b}>
                   <input
                     type="checkbox"
@@ -145,9 +146,10 @@ export default async function EditProductPage({
           </div>
 
           <div className="field">
-            <label>送料（1回の発送あたり）</label>
+            <label htmlFor="p-shipping">送料（1回の発送あたり）</label>
             <div className="row">
               <input
+                id="p-shipping"
                 className="input"
                 name="shipping_fee"
                 inputMode="numeric"
@@ -160,8 +162,9 @@ export default async function EditProductPage({
           </div>
 
           <div className="field">
-            <label>当日発送の締切時刻</label>
+            <label htmlFor="p-deadline">当日発送の締切時刻</label>
             <input
+              id="p-deadline"
               className="input"
               name="deadline_time"
               type="time"
@@ -172,8 +175,9 @@ export default async function EditProductPage({
           </div>
 
           <div className="field">
-            <label>説明文</label>
+            <label htmlFor="p-description">説明文</label>
             <textarea
+              id="p-description"
               className="input"
               name="description"
               rows={6}
