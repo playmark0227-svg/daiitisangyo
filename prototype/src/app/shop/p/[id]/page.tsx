@@ -5,6 +5,7 @@ import { TEMP_LABEL, type TempZone } from "@/lib/types";
 import { addToCart } from "@/actions/buyer";
 import { yen } from "@/lib/format";
 import Badges from "@/components/Badges";
+import Icon from "@/components/Icon";
 import { DeadlineChip, photoSrc } from "@/components/buyer/parts";
 
 const ERROR_TEXT: Record<string, string> = {
@@ -139,7 +140,10 @@ export default async function ProductDetailPage({
             </select>
           </div>
           <button className="btn btn-warm btn-xl btn-block" type="submit">
-            🛒 カートに入れる
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <Icon name="cart" size={20} />
+              カートに入れる
+            </span>
           </button>
         </form>
       ) : (

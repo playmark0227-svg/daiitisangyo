@@ -2,6 +2,13 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { listNotifications, markAllRead } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
+import Icon, { type IconName } from "@/components/Icon";
+
+const NOTIF_ICON: Record<string, IconName> = {
+  shipped: "truck",
+  refunded: "alert",
+  new_product: "tag",
+};
 
 export default async function NotificationsPage() {
   const user = await requireUser("buyer");
@@ -24,14 +31,8 @@ export default async function NotificationsPage() {
           {notifs.map((n) => {
             const body = (
               <>
-                <span aria-hidden="true" style={{ flex: "none", fontSize: 17 }}>
-                  {n.type === "shipped"
-                    ? "🚚"
-                    : n.type === "refunded"
-                      ? "↩️"
-                      : n.type === "new_product"
-                        ? "🐟"
-                        : "🔔"}
+                <span style={{ flex: "none", color: "var(--ink-faint)", display: "inline-flex" }}>
+                  <Icon name={NOTIF_ICON[n.type] ?? "bell"} size={18} />
                 </span>
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span style={{ display: "block", lineHeight: 1.55 }}>{n.message}</span>

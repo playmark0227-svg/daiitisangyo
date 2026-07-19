@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { listNotifications, markAllRead } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
+import Icon from "@/components/Icon";
 
 export default async function AdminNotificationsPage() {
   const user = await requireUser("admin");
@@ -25,14 +26,24 @@ export default async function AdminNotificationsPage() {
           {items.map((n) => {
             const body = (
               <>
-                <span style={{ flex: "none", fontSize: 17 }}>
-                  {n.type === "cancel_request" ? "⚠️" : "🔔"}
+                <span
+                  style={{
+                    flex: "none",
+                    marginTop: 1,
+                    color: n.type === "cancel_request" ? "var(--danger)" : "var(--ink-soft)",
+                  }}
+                >
+                  <Icon name={n.type === "cancel_request" ? "alert" : "bell"} size={18} />
                 </span>
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span style={{ display: "block", lineHeight: 1.55 }}>{n.message}</span>
                   <span className="n-time">{formatDateTime(n.created_at)}</span>
                 </span>
-                {n.link && <span style={{ color: "var(--accent)", fontWeight: 800 }}>→</span>}
+                {n.link && (
+                  <span style={{ flex: "none", color: "var(--accent)" }}>
+                    <Icon name="arrow-right" size={18} />
+                  </span>
+                )}
               </>
             );
             const cls = `notif${n.read ? "" : " unread"}`;

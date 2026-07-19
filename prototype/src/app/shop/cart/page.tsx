@@ -4,6 +4,7 @@ import { clearCart, removeLine, updateQty } from "@/actions/buyer";
 import { buildCartView, readCart } from "@/components/buyer/cart-view";
 import { yen } from "@/lib/format";
 import { photoSrc } from "@/components/buyer/parts";
+import Icon from "@/components/Icon";
 
 export default async function CartPage() {
   await requireUser("buyer");
@@ -15,10 +16,12 @@ export default async function CartPage() {
       <>
         <div className="sec-h" style={{ marginTop: 4 }}>カート</div>
         <div className="card" style={{ textAlign: "center", padding: "30px 16px" }}>
-          <div style={{ fontSize: 38 }}>🛒</div>
+          <div style={{ color: "var(--ink-faint)", display: "flex", justifyContent: "center" }}>
+            <Icon name="cart" size={40} />
+          </div>
           <p style={{ fontWeight: 800, margin: "8px 0" }}>カートは空です</p>
           <p className="muted" style={{ margin: "0 0 14px" }}>
-            本日の商品から気になるものを入れてみましょう。
+            本日の商品からご注文になる商品を追加してください。
           </p>
           <Link href="/shop" className="btn btn-primary btn-block">
             本日の商品を見る

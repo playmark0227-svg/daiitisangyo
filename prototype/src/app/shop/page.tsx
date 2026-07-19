@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/session";
 import { listNotifications, listPublicProducts } from "@/lib/domain";
 import { formatDateTime } from "@/lib/format";
 import { ProductFeed } from "@/components/buyer/parts";
+import Icon from "@/components/Icon";
 
 export default async function ShopHomePage() {
   const user = await requireUser("buyer");
@@ -25,7 +26,9 @@ export default async function ShopHomePage() {
           }}
         >
           <span className="row">
-            <span style={{ fontSize: 20 }}>🔔</span>
+            <span style={{ color: "var(--ok)", display: "inline-flex" }}>
+              <Icon name="bell" size={20} />
+            </span>
             <span className="grow">
               <span className="muted" style={{ display: "block", fontSize: 11 }}>
                 お知らせ・{formatDateTime(latest.created_at)}
@@ -50,7 +53,7 @@ export default async function ShopHomePage() {
 
       <div className="sec-h" style={{ marginTop: 4 }}>
         本日の商品
-        <span className="sec-sub">{products.length}件・売り場は毎朝入れ替わります</span>
+        <span className="sec-sub">{products.length}件・出品内容は毎朝更新されます</span>
       </div>
       <ProductFeed products={products} />
     </>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getOrder } from "@/lib/domain";
 import { ORDER_STATUS_LABEL, TEMP_LABEL, type OrderItem, type TempZone } from "@/lib/types";
 import { yen, formatDateTime } from "@/lib/format";
+import Icon from "@/components/Icon";
 import RefundForm from "../refund-form";
 
 export default async function AdminOrderDetailPage({
@@ -35,7 +36,9 @@ export default async function AdminOrderDetailPage({
         </span>
       </h1>
       <p style={{ margin: "0 0 14px" }}>
-        <Link href="/admin/orders">← 注文一覧へ戻る</Link>
+        <Link href="/admin/orders">
+          <Icon name="arrow-left" size={16} /> 注文一覧へ戻る
+        </Link>
       </p>
 
       {refunded === "1" && (
@@ -52,7 +55,10 @@ export default async function AdminOrderDetailPage({
           </div>
           {[...bySeller.entries()].map(([seller, items]) => (
             <div key={seller} className="card">
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>🐟 {seller}</div>
+              <div className="row" style={{ fontWeight: 800, marginBottom: 8, gap: 6 }}>
+                <Icon name="store" size={18} />
+                {seller}
+              </div>
               {items.map((it) => (
                 <div key={it.id} className="row" style={{ padding: "6px 0" }}>
                   {it.photo ? (

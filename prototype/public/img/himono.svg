@@ -1,9 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-<stop offset="0" stop-color="#6b5a4a"/><stop offset="1" stop-color="#b3a08c"/></linearGradient></defs>
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b6b7a"/><stop offset="1" stop-color="#7c8a98"/></linearGradient></defs>
 <rect width="400" height="400" fill="url(#g)"/>
-<circle cx="330" cy="70" r="110" fill="rgba(255,255,255,0.12)"/>
-<circle cx="60" cy="340" r="90" fill="rgba(0,0,0,0.08)"/>
-<text x="200" y="205" font-size="120" text-anchor="middle">🐟</text>
-<text x="200" y="330" font-size="34" font-weight="bold" text-anchor="middle" fill="rgba(255,255,255,0.95)" font-family="Hiragino Sans, sans-serif">一夜干し</text>
+<g stroke="rgba(255,255,255,0.55)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M140 175 L200 145 L260 175 L260 235 L200 265 L140 235 Z" fill="none"/><path d="M140 175 L200 205 L260 175 M200 205 L200 265" fill="none"/></g>
+<rect x="0" y="300" width="400" height="100" fill="rgba(0,0,0,0.16)"/>
+<text x="200" y="352" font-size="30" font-weight="bold" text-anchor="middle" fill="#ffffff" font-family="Hiragino Sans, sans-serif" letter-spacing="1">一夜干し</text>
 </svg>

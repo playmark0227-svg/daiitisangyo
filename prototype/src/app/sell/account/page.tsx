@@ -1,4 +1,5 @@
 import AppBar from "@/components/seller/AppBar";
+import Icon from "@/components/Icon";
 import { logout } from "@/actions/auth";
 import { sellerMonthlyStats } from "@/actions/seller";
 import { yen } from "@/lib/format";
@@ -13,7 +14,9 @@ export default async function SellerAccountPage() {
       <AppBar title="アカウント" />
       <main className="phone-main">
         <div className="card" style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 40 }}>🐟</div>
+          <div style={{ color: "var(--primary)" }}>
+            <Icon name="store" size={40} />
+          </div>
           <div style={{ fontSize: 19, fontWeight: 800 }}>{user.org}</div>
           <div className="muted">出品者（生産者）・{user.name}</div>
           <div className="muted">{user.phone}</div>

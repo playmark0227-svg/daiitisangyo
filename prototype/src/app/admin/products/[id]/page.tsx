@@ -5,6 +5,7 @@ import { TEMP_LABEL, type TempZone } from "@/lib/types";
 import { adminUpdateProduct } from "@/actions/admin";
 import { yen } from "@/lib/format";
 import { BADGE_OPTIONS, parseBadges } from "@/lib/catalog";
+import Icon from "@/components/Icon";
 
 export default async function AdminProductEditPage({
   params,
@@ -26,7 +27,9 @@ export default async function AdminProductEditPage({
         商品の編集 <span className="muted">#{product.id}</span>
       </h1>
       <p style={{ margin: "0 0 14px" }}>
-        <Link href="/admin/products">← 商品一覧へ戻る</Link>
+        <Link href="/admin/products">
+          <Icon name="arrow-left" size={16} /> 商品一覧へ戻る
+        </Link>
       </p>
 
       {done === "1" && <div className="ok-box">変更を保存しました。</div>}
@@ -131,7 +134,7 @@ export default async function AdminProductEditPage({
               defaultValue={product.deadline_time}
               style={{ maxWidth: 180 }}
             />
-            <span className="hint">例: 13:00 → 「13:00までの注文で当日発送」と表示されます。</span>
+            <span className="hint">例: 13:00 と設定すると、売り場に「13:00までの注文で当日発送」と表示されます。</span>
           </div>
 
           <button className="btn btn-primary" type="submit">

@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <aside className="admin-side">
         <div className="as-brand">
           {settings.service_name}
-          <small>ADMIN CONSOLE</small>
+          <small>管理者用 業務システム</small>
         </div>
         <AdminNav unread={unread} />
         <div className="as-foot">

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Icon from "@/components/Icon";
 import AppBar from "@/components/seller/AppBar";
 import { requestOrderCancel, shipOrder } from "@/actions/seller";
 import { getOrder } from "@/lib/domain";
@@ -101,7 +102,8 @@ export default async function SellerOrderDetailPage({
             <form action={shipOrder} style={{ marginTop: 18 }}>
               <input type="hidden" name="order_id" value={order.id} />
               <button className="btn btn-primary btn-xl btn-block" type="submit">
-                📦 発送しました
+                <Icon name="truck" size={22} />
+                発送しました
               </button>
             </form>
 

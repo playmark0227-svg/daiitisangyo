@@ -2,13 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { listCategories, listPublicProducts } from "@/lib/domain";
 import { ProductFeed } from "@/components/buyer/parts";
-
-const CAT_ICON: Record<string, string> = {
-  鮮魚: "🐟",
-  野菜: "🥬",
-  果物: "🍈",
-  加工品: "🥫",
-};
+import Icon from "@/components/Icon";
 
 export default async function CategoriesPage({
   searchParams,
@@ -32,17 +26,36 @@ export default async function CategoriesPage({
               key={c.id}
               href={`/shop/categories?cat=${c.id}`}
               className="card"
-              style={{ textAlign: "center", padding: "24px 10px", marginTop: 0 }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 8,
+                textAlign: "center",
+                padding: "22px 10px",
+                marginTop: 0,
+              }}
             >
-              <span style={{ fontSize: 36, display: "block", lineHeight: 1.3 }}>
-                {CAT_ICON[c.name] ?? "🧺"}
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "var(--primary-soft)",
+                  color: "var(--primary)",
+                }}
+              >
+                <Icon name="tag" size={22} />
               </span>
               <span style={{ fontWeight: 800, color: "var(--ink)", fontSize: 15 }}>{c.name}</span>
             </Link>
           ))}
         </div>
         <p className="muted" style={{ textAlign: "center", marginTop: 18 }}>
-          見たいカテゴリを押してください
+          ご覧になるカテゴリを選択してください。
         </p>
       </>
     );
@@ -65,7 +78,7 @@ export default async function CategoriesPage({
             href={`/shop/categories?cat=${c.id}`}
             className={`chip${catId === c.id ? " active" : ""}`}
           >
-            {CAT_ICON[c.name] ?? "🧺"} {c.name}
+            {c.name}
           </Link>
         ))}
       </div>

@@ -33,7 +33,7 @@ export default async function EditProductPage({
       <main className="phone-main">
         {sp.ai === "1" && (
           <div className="ok-box">
-            AIが説明文の下書きを保存しました。内容を確認して、必要なら直してから「保存する」を押してください。
+            説明文の下書きを自動で作成し、保存しました。内容を確認して、必要なら直してから「保存する」を押してください。
           </div>
         )}
         {sp.error === "cost" && (
@@ -189,10 +189,10 @@ export default async function EditProductPage({
               formAction={generateAiDescription}
               className="btn btn-ghost btn-block"
             >
-              🤖 AIに説明文を書いてもらう
+              説明文の下書きを自動作成
             </button>
             <p className="hint">
-              押すと今の入力内容をいったん保存し、AIが説明文の下書きを書きます。あとから自由に直せます。
+              押すと今の入力内容をいったん保存し、説明文の下書きを自動で作成します。あとから自由に直せます。
             </p>
           </div>
 

@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/session";
 import { listAddresses } from "@/lib/domain";
 import { addAddressAction } from "@/actions/buyer";
 import { logout } from "@/actions/auth";
+import Icon from "@/components/Icon";
 
 export default async function AccountPage({
   searchParams,
@@ -22,7 +23,21 @@ export default async function AccountPage({
       )}
 
       <div className="card row">
-        <span style={{ fontSize: 30 }}>🏬</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 44,
+            height: 44,
+            flex: "none",
+            borderRadius: 8,
+            display: "grid",
+            placeItems: "center",
+            background: "var(--primary-soft)",
+            color: "var(--primary)",
+          }}
+        >
+          <Icon name="store" size={24} />
+        </span>
         <span className="grow">
           <span style={{ display: "block", fontWeight: 800, fontSize: 15 }}>{user.org}</span>
           <span className="muted">発注者・{user.name}</span>
@@ -52,7 +67,9 @@ export default async function AccountPage({
         <div className="card" style={{ padding: "4px 16px" }}>
           {addresses.map((a) => (
             <div key={a.id} className="row" style={{ padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-              <span style={{ fontSize: 18 }}>📍</span>
+              <span aria-hidden="true" style={{ flex: "none", color: "var(--ink-faint)", display: "inline-flex" }}>
+                <Icon name="location" size={18} />
+              </span>
               <span className="grow">
                 <span style={{ display: "block", fontWeight: 800 }}>{a.label}</span>
                 <span className="muted">{a.address}</span>

@@ -7,6 +7,7 @@ import { TEMP_ZONES, photoForCategory } from "@/lib/catalog";
 import { yen } from "@/lib/format";
 import { salePrice } from "@/lib/pricing";
 import { TEMP_LABEL, type Category, type TempZone } from "@/lib/types";
+import Icon from "@/components/Icon";
 
 function Steps({ current }: { current: number }) {
   return (
@@ -30,12 +31,12 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <button className="btn btn-warm btn-xl btn-block" type="submit" disabled={pending}>
-      {pending ? "出品しています…" : "🐟 売りに出す"}
+      {pending ? "出品しています…" : "売りに出す"}
     </button>
   );
 }
 
-/** リアルタイム出品ウィザード（写真 → 金額 → 売りに出す） */
+/** リアルタイム出品ウィザード（写真・金額・売りに出す の3ステップ） */
 export default function NewListingWizard({
   marginRate,
   categories,
@@ -154,7 +155,14 @@ export default function NewListingWizard({
                 disabled={uploading || !photo}
                 onClick={() => setStep(2)}
               >
-                {uploading ? "送信中…" : "この写真で進む →"}
+                {uploading ? (
+                  "送信中…"
+                ) : (
+                  <>
+                    この写真で進む
+                    <Icon name="arrow-right" size={20} />
+                  </>
+                )}
               </button>
               <button
                 type="button"
@@ -178,7 +186,8 @@ export default function NewListingWizard({
               style={{ padding: "30px 20px", fontSize: 20 }}
               onClick={() => fileRef.current?.click()}
             >
-              📷 カメラで写真をとる
+              <Icon name="camera" size={24} />
+              カメラで写真をとる
             </button>
             <p className="hint" style={{ textAlign: "center", margin: "10px 0 18px" }}>
               品物にカメラを向けて、シャッターを押すだけです
@@ -313,7 +322,8 @@ export default function NewListingWizard({
           disabled={!validCost}
           onClick={() => setStep(3)}
         >
-          次へ（内容を確認する）→
+          次へ（内容を確認する）
+          <Icon name="arrow-right" size={20} />
         </button>
         <button
           type="button"
@@ -321,7 +331,8 @@ export default function NewListingWizard({
           style={{ marginTop: 10 }}
           onClick={() => setStep(1)}
         >
-          ← 写真にもどる
+          <Icon name="arrow-left" size={18} />
+          写真にもどる
         </button>
       </section>
     );
@@ -379,7 +390,8 @@ export default function NewListingWizard({
         style={{ marginTop: 10 }}
         onClick={() => setStep(2)}
       >
-        ← 金額にもどる
+        <Icon name="arrow-left" size={18} />
+        金額にもどる
       </button>
     </section>
   );

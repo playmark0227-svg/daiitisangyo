@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import Badges from "@/components/Badges";
+import Icon from "@/components/Icon";
 import AppBar from "@/components/seller/AppBar";
 import { getProduct } from "@/lib/domain";
 import { yen } from "@/lib/format";
@@ -21,12 +22,14 @@ export default async function ListingDonePage({
       <AppBar title="出品完了" backHref="/sell" />
       <main className="phone-main">
         <div style={{ textAlign: "center", padding: "26px 0 6px" }}>
-          <div style={{ fontSize: 56, lineHeight: 1 }}>🎉</div>
+          <div style={{ color: "var(--go)", lineHeight: 1 }}>
+            <Icon name="check-circle" size={56} />
+          </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: "12px 0 4px" }}>
-            出品されました！
+            出品を受け付けました
           </h1>
           <p className="muted" style={{ margin: 0 }}>
-            お店の売り場に並びました。注文が入るとお知らせします。
+            売り場に掲載しました。注文が入るとお知らせします。
           </p>
         </div>
 
